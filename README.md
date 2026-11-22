@@ -1,25 +1,27 @@
 # GraphRAG Teaching Assistant
 
-An intelligent teaching assistant powered by **knowledge graphs and generative AI**. The included autonomous-driving lesson connects vehicle perception, localization, planning, control, and safety so learners can explore concepts and ask questions about the relationships between them.
+An intelligent teaching assistant powered by **knowledge graphs and generative AI**. The full course graph connects concepts in artificial intelligence and autonomous driving. Learners can explore relationships, inspect course figures, and ask questions grounded in the graph.
 
 ## Interactive Demos / 交互演示（部分展示）
 
 ### Knowledge Graph Exploration / 知识图谱探索
 
-Search for LiDAR to focus on its immediate neighbours. The detail panel explains the selected concept and shows an illustration of how laser ranging works.
+The MMGraphRAG pipeline built this graph from **241 pages of heterogeneous course slides** on artificial intelligence and autonomous driving. MinerU extracted text and figures from the slides. A language model extracted entities and relationships from the text, and a vision-language model turned the figures into scene graphs. The pipeline aligned related entities across the two sources using semantic embeddings, relationship-aware spectral clustering, and model-based validation. The exported GraphML contains **1,294 nodes and 2,589 edges**. After normalization, the explorer displays **1,271 unique nodes** (1,032 non-image entities and 239 figure nodes) and **2,580 relationships**.
+
+Browse the full graph, then search for LiDAR to focus on its immediate neighbours. Select a linked figure to inspect the original course material in the detail panel.
 
 <picture>
-  <source type="image/avif" srcset="assets/demos/knowledge-graph-exploration.avif">
-  <img src="assets/demos/knowledge-graph-exploration.gif" alt="Searching for LiDAR in the interactive knowledge graph and viewing its linked concepts and ranging diagram" width="960">
+  <source type="image/avif" srcset="assets/demos/full-knowledge-graph-exploration.avif">
+  <img src="assets/demos/full-knowledge-graph-exploration.gif" alt="Browsing the full course graph, searching for LiDAR, and opening a linked figure from the course slides" width="960">
 </picture>
 
 ### Graph-Grounded Q&A / 图谱问答
 
-Ask how LiDAR and millimetre-wave radar complement each other. The assistant retrieves related graph evidence, generates an answer with Qwen, and lets you select an evidence chip to jump to the corresponding node.
+Ask how LiDAR helps an autonomous vehicle perceive its surroundings. The assistant retrieves and summarizes relevant graph evidence locally. Select an evidence chip to jump to the corresponding node.
 
 <picture>
-  <source type="image/avif" srcset="assets/demos/graph-grounded-qa.avif">
-  <img src="assets/demos/graph-grounded-qa.gif" alt="Submitting a question to the assistant, reading the Qwen-generated answer, and selecting a LiDAR evidence chip to focus the graph" width="960">
+  <source type="image/avif" srcset="assets/demos/full-graph-grounded-qa.avif">
+  <img src="assets/demos/full-graph-grounded-qa.gif" alt="Asking the assistant about LiDAR, reading the local evidence summary, and selecting a retrieved entity to focus the course graph" width="960">
 </picture>
 
 ## Quick Start
@@ -45,7 +47,7 @@ python scripts/verify_project.py
 python main.py
 ```
 
-Open [the local application](http://127.0.0.1:8000). Search for `激光雷达` (LiDAR), open **智能问答**, and try `激光雷达和毫米波雷达如何互补？` (“How do LiDAR and millimetre-wave radar complement each other?”).
+Open [the local application](http://127.0.0.1:8000). Search for `激光雷达 (LiDAR)`, open **智能问答**, and try `激光雷达如何帮助自动驾驶汽车感知环境？` (“How does LiDAR help an autonomous vehicle perceive its surroundings?”).
 
 ### Enable Generative and Visual Q&A
 
@@ -59,14 +61,14 @@ In this mode, the app sends questions and selected evidence to DashScope. It can
 
 ## Data and Architecture
 
-The repository includes a self-contained example with **38 nodes, 53 relationships, 6 text passages, and 2 diagrams**. These assets were written and drawn for the example. The original course corpus, reference PDFs, and local credentials are stored separately.
+The repository includes the full course GraphML snapshot, **239 linked figures**, and **14 text chunks** used as retrieval evidence. The viewer loads the exported snapshot directly. The graph builder and source courseware PDF are maintained separately.
 
 | Path | Contents |
 | --- | --- |
 | `main.py` | FastAPI entry point, GraphML and media endpoints, streaming chat |
 | `rag/` | Graph normalization, retrieval, evidence selection, and DashScope integration |
 | `static/` | Graph explorer and chat interface |
-| `data/` | Example GraphML, source passages, and diagrams |
+| `data/` | Full course GraphML, text chunks, image metadata, and linked figures |
 | `scripts/` | Windows setup, dataset verification, and optional snapshot import |
 
 You can point `DATA_DIR` at your own dataset with the same directory layout. Place reference PDFs you have permission to use under `static/resources/papers/`, `static/resources/books/`, or `static/resources/patents/` to show them in the resource panel. The app listens on loopback by default. Graph write-back is opt-in via `ALLOW_GRAPH_WRITE=true`. See [architecture and data flow](docs/ARCHITECTURE.md).
