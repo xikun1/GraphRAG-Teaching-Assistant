@@ -83,18 +83,36 @@ def _messages(user_prompt: str, system_prompt: Optional[str] = None) -> list:
     return messages
 
 
+def _token_options(model: str) -> Dict[str, int]:
+    if model == "qwen4-max":
+        # Qwen4-Max counts reasoning and the visible answer together.
+        thinking_budget = 1024
+        return {
+            "thinking_budget": thinking_budget,
+            "max_completion_tokens": thinking_budget + settings.max_output_tokens,
+        }
+    return {"max_tokens": settings.max_output_tokens}
+
+
+def _completion_text(data: dict) -> str:
+    try:
+        content = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise LLMError("无法解析模型回答") from exc
+    if not isinstance(content, str) or not content.strip():
+        raise LLMError("模型未返回可显示的答案")
+    return content
+
+
 async def chat(user_prompt: str, system_prompt: Optional[str] = None, temperature: Optional[float] = None) -> str:
     payload = {
         "model": settings.text_model,
         "messages": _messages(user_prompt, system_prompt),
         "temperature": settings.temperature if temperature is None else temperature,
-        "max_tokens": settings.max_output_tokens,
+        **_token_options(settings.text_model),
     }
     data = await _post_json(f"{settings.base_url}/chat/completions", payload)
-    try:
-        return data["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, TypeError) as exc:
-        raise LLMError(f"无法解析文本模型响应: {str(data)[:300]}") from exc
+    return _completion_text(data)
 
 
 async def chat_stream(
@@ -106,7 +124,7 @@ async def chat_stream(
         "model": settings.text_model,
         "messages": _messages(user_prompt, system_prompt),
         "temperature": settings.temperature if temperature is None else temperature,
-        "max_tokens": settings.max_output_tokens,
+        **_token_options(settings.text_model),
         "stream": True,
     }
     async with httpx.AsyncClient(timeout=settings.request_timeout) as client:
@@ -144,10 +162,7 @@ async def chat_multimodal(
         "model": settings.mm_model,
         "messages": messages,
         "temperature": settings.temperature if temperature is None else temperature,
-        "max_tokens": settings.max_output_tokens,
+        **_token_options(settings.mm_model),
     }
     data = await _post_json(f"{settings.base_url}/chat/completions", payload)
-    try:
-        return data["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, TypeError) as exc:
-        raise LLMError(f"无法解析多模态模型响应: {str(data)[:300]}") from exc
+    return _completion_text(data)

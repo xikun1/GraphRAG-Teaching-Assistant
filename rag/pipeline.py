@@ -53,8 +53,8 @@ def _parse_json_object(text: str) -> dict:
     return {"visual_summary": text[:800], "search_query": ""}
 
 
-def _local_answer(query: str, context: dict) -> str:
-    lines = [f"> {OFFLINE_NOTICE}", "", "## 本地图谱检索结果"]
+def _local_answer(query: str, context: dict, notice: str = OFFLINE_NOTICE) -> str:
+    lines = [f"> {notice}", "", "## 本地图谱检索结果"]
     if not context["found"]:
         lines.append("没有找到与当前问题直接匹配的本地图谱节点。")
         return "\n".join(lines)
@@ -222,10 +222,13 @@ async def run_pipeline(
             ):
                 answer_parts.append(token)
                 yield {"event": "token", "text": token}
-            yield {"event": "done", "answer": "".join(answer_parts), "mode": "multimodal-rag"}
+            answer = "".join(answer_parts)
+            if not answer.strip():
+                raise llm.LLMError("模型未返回可显示的答案")
+            yield {"event": "done", "answer": answer, "mode": "multimodal-rag"}
         except llm.LLMError as exc:
             logger.warning("生成失败，返回本地证据摘要: %s", exc)
-            answer = _local_answer(original_query, context)
+            answer = _local_answer(original_query, context, "在线模型暂未提供回答，下方展示本地知识图谱检索结果。")
             for token in _chunks(answer):
                 yield {"event": "token", "text": token}
             yield {"event": "done", "answer": answer, "mode": "local-fallback", "warning": str(exc)}

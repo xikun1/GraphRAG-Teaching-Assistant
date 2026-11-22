@@ -65,8 +65,8 @@ class Settings:
         "DASHSCOPE_NATIVE_BASE_URL", "https://dashscope.aliyuncs.com"
     ).rstrip("/"))
 
-    text_model: str = field(default_factory=lambda: _env("TEXT_MODEL", "qwen3.7-plus"))
-    mm_model: str = field(default_factory=lambda: _env("MM_MODEL", "qwen3.7-plus"))
+    text_model: str = field(default_factory=lambda: _env("TEXT_MODEL", "qwen4-max"))
+    mm_model: str = field(default_factory=lambda: _env("MM_MODEL", "qwen4-max"))
     embed_model: str = field(default_factory=lambda: _env("EMBED_MODEL", "qwen3-vl-embedding"))
     embed_dim: int = field(default_factory=lambda: _int("EMBED_DIM", 1024))
     embed_batch_size: int = field(default_factory=lambda: _int("EMBED_BATCH_SIZE", 8))
