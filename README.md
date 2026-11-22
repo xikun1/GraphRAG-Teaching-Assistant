@@ -6,22 +6,24 @@ An intelligent teaching assistant powered by **knowledge graphs and generative A
 
 ### Knowledge Graph Exploration / 知识图谱探索
 
-The MMGraphRAG pipeline built this graph from **241 pages of heterogeneous course slides** on artificial intelligence and autonomous driving. MinerU extracted text and figures from the slides. A language model extracted entities and relationships from the text, and a vision-language model turned the figures into scene graphs. The pipeline aligned related entities across the two sources using semantic embeddings, relationship-aware spectral clustering, and model-based validation. The exported GraphML contains **1,294 nodes and 2,589 edges**. After normalization, the explorer displays **1,271 unique nodes** (1,032 non-image entities and 239 figure nodes) and **2,580 relationships**.
+The platform visualizes the output of a multimodal graph-construction pipeline that uses trained models to process **241 pages of heterogeneous course slides** on artificial intelligence and autonomous driving. MinerU extracted text and figures from the slides. A language model extracted entities and relationships from the text, and a vision-language model turned the figures into scene graphs. The pipeline aligned related entities across the two sources using semantic embeddings, relationship-aware spectral clustering, and model-based validation. The exported GraphML contains **1,294 nodes and 2,589 edges**. After normalization, the explorer displays **1,271 unique nodes** (1,032 non-image entities and 239 figure nodes) and **2,580 relationships**.
 
-Browse the full graph, then search for LiDAR to focus on its immediate neighbours. Select a linked figure to inspect the original course material in the detail panel.
+This repository provides the exported graph and its interactive visualization. The graph-construction pipeline and its model configuration have not been open-sourced in this repository.
+
+Pan the graph, then select **Fit Canvas** to bring the full network back into view. Search for LiDAR to focus on its immediate neighbors, then open a linked figure from the course slides.
 
 <picture>
-  <source type="image/avif" srcset="assets/demos/full-knowledge-graph-exploration.avif">
-  <img src="assets/demos/full-knowledge-graph-exploration.gif" alt="Browsing the full course graph, searching for LiDAR, and opening a linked figure from the course slides" width="960">
+  <source type="image/avif" srcset="assets/demos/knowledge-graph-fit-and-search.avif">
+  <img src="assets/demos/knowledge-graph-fit-and-search.gif" alt="Recentering the full graph with Fit Canvas, searching for LiDAR, and opening a linked course figure" width="960">
 </picture>
 
 ### Graph-Grounded Q&A / 图谱问答
 
-Ask how LiDAR helps an autonomous vehicle perceive its surroundings. The assistant retrieves and summarizes relevant graph evidence locally. Select an evidence chip to jump to the corresponding node.
+Ask how LiDAR helps an autonomous vehicle perceive its surroundings. Read the local answer, then select a matched entity to open its description in the left-hand detail panel.
 
 <picture>
-  <source type="image/avif" srcset="assets/demos/full-graph-grounded-qa.avif">
-  <img src="assets/demos/full-graph-grounded-qa.gif" alt="Asking the assistant about LiDAR, reading the local evidence summary, and selecting a retrieved entity to focus the course graph" width="960">
+  <source type="image/avif" srcset="assets/demos/graph-qa-entity-details.avif">
+  <img src="assets/demos/graph-qa-entity-details.gif" alt="Reading the local answer about LiDAR, then selecting a matched entity to display its details on the left" width="960">
 </picture>
 
 ## Quick Start
@@ -61,7 +63,7 @@ In this mode, the app sends questions and selected evidence to DashScope. It can
 
 ## Data and Architecture
 
-The repository includes the full course GraphML snapshot, **239 linked figures**, and **14 text chunks** used as retrieval evidence. The viewer loads the exported snapshot directly. The graph builder and source courseware PDF are maintained separately.
+The repository includes the full course GraphML snapshot, **239 linked figures**, and **14 text chunks** used as retrieval evidence. The viewer loads the exported snapshot directly. The source courseware PDF is maintained separately.
 
 | Path | Contents |
 | --- | --- |
