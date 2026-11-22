@@ -1,0 +1,625 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="order" for="edge" attr.name="order" attr.type="long"/>
+<key id="weight" for="edge" attr.name="weight" attr.type="double"/>
+<key id="source_id" for="edge" attr.name="source_id" attr.type="string"/>
+<key id="evidence" for="edge" attr.name="evidence" attr.type="string"/>
+<key id="description" for="edge" attr.name="description" attr.type="string"/>
+<key id="relation" for="edge" attr.name="relation" attr.type="string"/>
+<key id="source_id" for="node" attr.name="source_id" attr.type="string"/>
+<key id="description" for="node" attr.name="description" attr.type="string"/>
+<key id="entity_type" for="node" attr.name="entity_type" attr.type="string"/>
+<graph edgedefault="undirected"><node id="自动驾驶">
+  <data key="entity_type">基础概念</data>
+  <data key="description">车辆在给定运行条件下完成部分或全部动态驾驶任务。</data>
+  <data key="source_id">chunk-overview</data>
+</node>
+<node id="环境感知">
+  <data key="entity_type">核心技术</data>
+  <data key="description">从传感器观测识别可行驶区域、道路标记和交通参与者。</data>
+  <data key="source_id">chunk-overview</data>
+</node>
+<node id="定位与建图">
+  <data key="entity_type">核心技术</data>
+  <data key="description">估计车辆在地图中的位置与姿态，并维护环境的空间表示。</data>
+  <data key="source_id">chunk-overview</data>
+</node>
+<node id="决策规划">
+  <data key="entity_type">核心技术</data>
+  <data key="description">结合路线、障碍物预测和交通规则选择行为与行驶轨迹。</data>
+  <data key="source_id">chunk-overview</data>
+</node>
+<node id="车辆控制">
+  <data key="entity_type">核心技术</data>
+  <data key="description">闭环地把规划轨迹转成执行器指令。</data>
+  <data key="source_id">chunk-overview</data>
+</node>
+<node id="安全验证">
+  <data key="entity_type">基础概念</data>
+  <data key="description">用可复现的场景、指标和试验验证系统的安全目标。</data>
+  <data key="source_id">chunk-overview</data>
+</node>
+<node id="摄像头">
+  <data key="entity_type">产品/设备</data>
+  <data key="description">采集二维图像，提供信号灯颜色、交通标志、纹理和车道线等信息。</data>
+  <data key="source_id">chunk-sensors</data>
+</node>
+<node id="激光雷达">
+  <data key="entity_type">产品/设备</data>
+  <data key="description">LiDAR 根据激光往返时间估算距离，形成三维点云，用于障碍物定位和环境几何建模。</data>
+  <data key="source_id">chunk-sensors</data>
+</node>
+<node id="毫米波雷达">
+  <data key="entity_type">产品/设备</data>
+  <data key="description">利用射频回波估计距离、方位和径向速度。与激光雷达的几何测量互补。</data>
+  <data key="source_id">chunk-sensors</data>
+</node>
+<node id="传感器融合">
+  <data key="entity_type">核心技术</data>
+  <data key="description">对齐时空坐标后合并摄像头、激光雷达和毫米波雷达的观测，减少单一传感器的盲区。</data>
+  <data key="source_id">chunk-sensors</data>
+</node>
+<node id="三维点云">
+  <data key="entity_type">数据</data>
+  <data key="description">由带空间坐标的测量点组成，描述障碍物与地面的形状。</data>
+  <data key="source_id">chunk-sensors</data>
+</node>
+<node id="目标检测">
+  <data key="entity_type">核心技术</data>
+  <data key="description">从图像或点云估计物体类别与位置，可输出二维或三维边界框。</data>
+  <data key="source_id">chunk-sensors</data>
+</node>
+<node id="目标跟踪">
+  <data key="entity_type">核心技术</data>
+  <data key="description">以连续帧观测关联同一物体，估计其速度和轨迹。</data>
+  <data key="source_id">chunk-sensors</data>
+</node>
+<node id="车道线识别">
+  <data key="entity_type">核心技术</data>
+  <data key="description">从道路画面估计车道标线及其几何位置。</data>
+  <data key="source_id">chunk-sensors</data>
+</node>
+<node id="相机与雷达外参">
+  <data key="entity_type">基础概念</data>
+  <data key="description">不同传感器坐标系间的刚体变换，通过标定得到。</data>
+  <data key="source_id">chunk-sensors</data>
+</node>
+<node id="时间同步">
+  <data key="entity_type">基础概念</data>
+  <data key="description">对齐测量时间戳，减少运动造成的跨传感器匹配误差。</data>
+  <data key="source_id">chunk-sensors</data>
+</node>
+<node id="径向速度">
+  <data key="entity_type">性能指标</data>
+  <data key="description">目标沿雷达视线方向的速度分量。</data>
+  <data key="source_id">chunk-sensors</data>
+</node>
+<node id="卫星定位">
+  <data key="entity_type">核心技术</data>
+  <data key="description">GNSS 提供全球坐标参考，精度受遮挡和多径传播影响。</data>
+  <data key="source_id">chunk-localization</data>
+</node>
+<node id="惯性测量单元">
+  <data key="entity_type">产品/设备</data>
+  <data key="description">IMU 测量角速度与比力，用于估计短时车身运动。</data>
+  <data key="source_id">chunk-localization</data>
+</node>
+<node id="车轮里程计">
+  <data key="entity_type">产品/设备</data>
+  <data key="description">根据车轮转速估计行驶距离和短时速度，打滑时误差会增大。</data>
+  <data key="source_id">chunk-localization</data>
+</node>
+<node id="地图匹配">
+  <data key="entity_type">核心技术</data>
+  <data key="description">把车辆观测与地图特征匹配以约束车辆位姿。</data>
+  <data key="source_id">chunk-localization</data>
+</node>
+<node id="高精地图">
+  <data key="entity_type">数据</data>
+  <data key="description">以结构化形式记录车道几何、边界和道路连接关系。</data>
+  <data key="source_id">chunk-localization</data>
+</node>
+<node id="行为决策">
+  <data key="entity_type">核心技术</data>
+  <data key="description">结合道路语义和交互情况选择跟车、换道、让行或停车。</data>
+  <data key="source_id">chunk-planning</data>
+</node>
+<node id="运动预测">
+  <data key="entity_type">核心技术</data>
+  <data key="description">根据历史观测和道路结构估计交通参与者未来的可能轨迹。</data>
+  <data key="source_id">chunk-planning</data>
+</node>
+<node id="轨迹规划">
+  <data key="entity_type">核心技术</data>
+  <data key="description">生成满足碰撞约束和车辆可达性约束的位置及速度序列。</data>
+  <data key="source_id">chunk-planning</data>
+</node>
+<node id="碰撞检查">
+  <data key="entity_type">核心技术</data>
+  <data key="description">沿候选轨迹检验车身占用区域是否与预测障碍物相交。</data>
+  <data key="source_id">chunk-planning</data>
+</node>
+<node id="速度曲线">
+  <data key="entity_type">数据</data>
+  <data key="description">记录车辆随时间的目标速度，供纵向控制跟踪。</data>
+  <data key="source_id">chunk-planning</data>
+</node>
+<node id="横向控制">
+  <data key="entity_type">核心技术</data>
+  <data key="description">通过转向减少车辆相对参考路径的横向位置和航向误差。</data>
+  <data key="source_id">chunk-control</data>
+</node>
+<node id="纵向控制">
+  <data key="entity_type">核心技术</data>
+  <data key="description">通过驱动和制动跟踪目标速度或跟车距离。</data>
+  <data key="source_id">chunk-control</data>
+</node>
+<node id="车辆动力学">
+  <data key="entity_type">基础概念</data>
+  <data key="description">描述力、转向和轮胎状态如何影响车辆运动。</data>
+  <data key="source_id">chunk-control</data>
+</node>
+<node id="轨迹跟踪误差">
+  <data key="entity_type">性能指标</data>
+  <data key="description">实测车辆状态相对于参考轨迹的偏差，可用于调节控制器。</data>
+  <data key="source_id">chunk-control</data>
+</node>
+<node id="运行设计域">
+  <data key="entity_type">基础概念</data>
+  <data key="description">ODD 规定系统可使用的道路、地理区域、速度范围和环境条件。</data>
+  <data key="source_id">chunk-safety</data>
+</node>
+<node id="最小风险策略">
+  <data key="entity_type">基础概念</data>
+  <data key="description">当前自动驾驶任务无法安全继续时，依据系统设计执行风险降低动作。</data>
+  <data key="source_id">chunk-safety</data>
+</node>
+<node id="场景仿真">
+  <data key="entity_type">核心技术</data>
+  <data key="description">以可控条件反复测试交互和罕见场景，记录系统反应。</data>
+  <data key="source_id">chunk-safety</data>
+</node>
+<node id="封闭场地测试">
+  <data key="entity_type">基础概念</data>
+  <data key="description">在隔离环境内用实体设备验证关键风险场景和执行链路。</data>
+  <data key="source_id">chunk-safety</data>
+</node>
+<node id="感知置信度">
+  <data key="entity_type">性能指标</data>
+  <data key="description">描述系统对感知结果可靠性的估计，需结合实际数据评估校准。</data>
+  <data key="source_id">chunk-safety</data>
+</node>
+<node id="激光雷达测距示意">
+  <data key="entity_type">ORI_IMG</data>
+  <data key="description">激光脉冲照射目标表面后返回传感器。往返飞行时间乘以光速再除以二，可估算目标距离。</data>
+  <data key="source_id">data/images/lidar-ranging.png</data>
+</node>
+<node id="传感器融合流程图">
+  <data key="entity_type">ORI_IMG</data>
+  <data key="description">摄像头、激光雷达和毫米波雷达的数据先对齐时间和坐标，再结合各观测的可靠性估计目标状态。</data>
+  <data key="source_id">data/images/sensor-fusion.png</data>
+</node>
+<edge source="自动驾驶" target="环境感知">
+  <data key="relation">包含</data>
+  <data key="description">包含</data>
+  <data key="evidence">环境感知把传感器输入转成环境状态。</data>
+  <data key="source_id">chunk-overview</data>
+  <data key="weight">1.0</data>
+  <data key="order">1</data>
+</edge>
+<edge source="自动驾驶" target="定位与建图">
+  <data key="relation">包含</data>
+  <data key="description">包含</data>
+  <data key="evidence">定位与建图提供连续位姿和地图参考。</data>
+  <data key="source_id">chunk-overview</data>
+  <data key="weight">1.0</data>
+  <data key="order">2</data>
+</edge>
+<edge source="自动驾驶" target="决策规划">
+  <data key="relation">包含</data>
+  <data key="description">包含</data>
+  <data key="evidence">决策规划选择在当前环境中可执行的轨迹。</data>
+  <data key="source_id">chunk-overview</data>
+  <data key="weight">1.0</data>
+  <data key="order">3</data>
+</edge>
+<edge source="自动驾驶" target="车辆控制">
+  <data key="relation">包含</data>
+  <data key="description">包含</data>
+  <data key="evidence">控制模块执行规划轨迹。</data>
+  <data key="source_id">chunk-overview</data>
+  <data key="weight">1.0</data>
+  <data key="order">4</data>
+</edge>
+<edge source="自动驾驶" target="安全验证">
+  <data key="relation">依赖</data>
+  <data key="description">依赖</data>
+  <data key="evidence">安全验证检查功能边界和降级行为。</data>
+  <data key="source_id">chunk-overview</data>
+  <data key="weight">1.0</data>
+  <data key="order">5</data>
+</edge>
+<edge source="环境感知" target="决策规划">
+  <data key="relation">支撑</data>
+  <data key="description">支撑</data>
+  <data key="evidence">规划使用障碍物状态和道路结构估计。</data>
+  <data key="source_id">chunk-overview</data>
+  <data key="weight">1.0</data>
+  <data key="order">6</data>
+</edge>
+<edge source="环境感知" target="摄像头">
+  <data key="relation">采用</data>
+  <data key="description">采用</data>
+  <data key="evidence">图像为颜色和语义识别提供输入。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">1</data>
+</edge>
+<edge source="环境感知" target="激光雷达">
+  <data key="relation">采用</data>
+  <data key="description">采用</data>
+  <data key="evidence">点云为三维物体和可行驶空间估计提供几何信息。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">2</data>
+</edge>
+<edge source="环境感知" target="毫米波雷达">
+  <data key="relation">采用</data>
+  <data key="description">采用</data>
+  <data key="evidence">雷达回波提供目标距离及径向速度。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">3</data>
+</edge>
+<edge source="环境感知" target="传感器融合">
+  <data key="relation">包含</data>
+  <data key="description">包含</data>
+  <data key="evidence">融合将不同来源的观测合并为统一的环境估计。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">4</data>
+</edge>
+<edge source="环境感知" target="目标检测">
+  <data key="relation">包含</data>
+  <data key="description">包含</data>
+  <data key="evidence">识别并定位周围物体是感知的主要任务。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">5</data>
+</edge>
+<edge source="定位与建图" target="决策规划">
+  <data key="relation">支撑</data>
+  <data key="description">支撑</data>
+  <data key="evidence">规划使用车辆位置及地图参考。</data>
+  <data key="source_id">chunk-overview</data>
+  <data key="weight">1.0</data>
+  <data key="order">7</data>
+</edge>
+<edge source="定位与建图" target="卫星定位">
+  <data key="relation">采用</data>
+  <data key="description">采用</data>
+  <data key="evidence">卫星定位提供全局参考。</data>
+  <data key="source_id">chunk-localization</data>
+  <data key="weight">1.0</data>
+  <data key="order">1</data>
+</edge>
+<edge source="定位与建图" target="惯性测量单元">
+  <data key="relation">采用</data>
+  <data key="description">采用</data>
+  <data key="evidence">惯性观测用于估计相邻时刻的车辆运动。</data>
+  <data key="source_id">chunk-localization</data>
+  <data key="weight">1.0</data>
+  <data key="order">2</data>
+</edge>
+<edge source="定位与建图" target="车轮里程计">
+  <data key="relation">采用</data>
+  <data key="description">采用</data>
+  <data key="evidence">车轮里程为短时间位移提供约束。</data>
+  <data key="source_id">chunk-localization</data>
+  <data key="weight">1.0</data>
+  <data key="order">3</data>
+</edge>
+<edge source="定位与建图" target="地图匹配">
+  <data key="relation">采用</data>
+  <data key="description">采用</data>
+  <data key="evidence">地图匹配把局部观测约束到地图坐标。</data>
+  <data key="source_id">chunk-localization</data>
+  <data key="weight">1.0</data>
+  <data key="order">4</data>
+</edge>
+<edge source="决策规划" target="车辆控制">
+  <data key="relation">输出</data>
+  <data key="description">输出</data>
+  <data key="evidence">规划轨迹是控制模块的参考输入。</data>
+  <data key="source_id">chunk-overview</data>
+  <data key="weight">1.0</data>
+  <data key="order">8</data>
+</edge>
+<edge source="决策规划" target="高精地图">
+  <data key="relation">支撑</data>
+  <data key="description">支撑</data>
+  <data key="evidence">车道连通和道路规则是规划边界条件。</data>
+  <data key="source_id">chunk-localization</data>
+  <data key="weight">1.0</data>
+  <data key="order">6</data>
+</edge>
+<edge source="决策规划" target="行为决策">
+  <data key="relation">包含</data>
+  <data key="description">包含</data>
+  <data key="evidence">先选择高层驾驶行为，再细化成轨迹。</data>
+  <data key="source_id">chunk-planning</data>
+  <data key="weight">1.0</data>
+  <data key="order">1</data>
+</edge>
+<edge source="决策规划" target="轨迹规划">
+  <data key="relation">包含</data>
+  <data key="description">包含</data>
+  <data key="evidence">轨迹规划把行为化为空间和时间序列。</data>
+  <data key="source_id">chunk-planning</data>
+  <data key="weight">1.0</data>
+  <data key="order">2</data>
+</edge>
+<edge source="车辆控制" target="横向控制">
+  <data key="relation">包含</data>
+  <data key="description">包含</data>
+  <data key="evidence">横向控制通过方向盘角度实现路径跟踪。</data>
+  <data key="source_id">chunk-control</data>
+  <data key="weight">1.0</data>
+  <data key="order">1</data>
+</edge>
+<edge source="车辆控制" target="纵向控制">
+  <data key="relation">包含</data>
+  <data key="description">包含</data>
+  <data key="evidence">纵向控制通过驱动或制动实现速度跟踪。</data>
+  <data key="source_id">chunk-control</data>
+  <data key="weight">1.0</data>
+  <data key="order">2</data>
+</edge>
+<edge source="车辆控制" target="车辆动力学">
+  <data key="relation">依赖</data>
+  <data key="description">依赖</data>
+  <data key="evidence">控制器设计需考虑轮胎和底盘的动态响应。</data>
+  <data key="source_id">chunk-control</data>
+  <data key="weight">1.0</data>
+  <data key="order">3</data>
+</edge>
+<edge source="安全验证" target="运行设计域">
+  <data key="relation">依赖</data>
+  <data key="description">依赖</data>
+  <data key="evidence">场景覆盖范围应与系统的运行条件一致。</data>
+  <data key="source_id">chunk-safety</data>
+  <data key="weight">1.0</data>
+  <data key="order">1</data>
+</edge>
+<edge source="安全验证" target="场景仿真">
+  <data key="relation">采用</data>
+  <data key="description">采用</data>
+  <data key="evidence">仿真可低成本迭代和复现难以实测的场景。</data>
+  <data key="source_id">chunk-safety</data>
+  <data key="weight">1.0</data>
+  <data key="order">2</data>
+</edge>
+<edge source="安全验证" target="封闭场地测试">
+  <data key="relation">采用</data>
+  <data key="description">采用</data>
+  <data key="evidence">封闭场地支持真实车辆的可控验证。</data>
+  <data key="source_id">chunk-safety</data>
+  <data key="weight">1.0</data>
+  <data key="order">3</data>
+</edge>
+<edge source="摄像头" target="传感器融合">
+  <data key="relation">输入</data>
+  <data key="description">输入</data>
+  <data key="evidence">摄像头提供类别、纹理与颜色信息。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">9</data>
+</edge>
+<edge source="摄像头" target="车道线识别">
+  <data key="relation">支撑</data>
+  <data key="description">支撑</data>
+  <data key="evidence">车道标线的图像纹理用于估计边界与曲率。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">14</data>
+</edge>
+<edge source="激光雷达" target="三维点云">
+  <data key="relation">输出</data>
+  <data key="description">输出</data>
+  <data key="evidence">扫描获得的距离和角度可以转换为空间坐标。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">6</data>
+</edge>
+<edge source="激光雷达" target="传感器融合">
+  <data key="relation">输入</data>
+  <data key="description">输入</data>
+  <data key="evidence">激光雷达提供距离和三维几何约束。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">7</data>
+</edge>
+<edge source="激光雷达" target="毫米波雷达">
+  <data key="relation">对比</data>
+  <data key="description">对比</data>
+  <data key="evidence">激光雷达更适合描述空间形状；毫米波雷达直接测量径向速度，两者相互补充。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">10</data>
+</edge>
+<edge source="激光雷达" target="激光雷达测距示意">
+  <data key="relation">展示</data>
+  <data key="description">展示</data>
+  <data key="evidence">激光脉冲照射目标表面后返回传感器。往返飞行时间乘以光速再除以二，可估算目标距离。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">1</data>
+</edge>
+<edge source="毫米波雷达" target="传感器融合">
+  <data key="relation">输入</data>
+  <data key="description">输入</data>
+  <data key="evidence">毫米波雷达提供速度和距离观测。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">8</data>
+</edge>
+<edge source="毫米波雷达" target="径向速度">
+  <data key="relation">输出</data>
+  <data key="description">输出</data>
+  <data key="evidence">多普勒频移可用于估计目标的径向速度。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">13</data>
+</edge>
+<edge source="传感器融合" target="时间同步">
+  <data key="relation">依赖</data>
+  <data key="description">依赖</data>
+  <data key="evidence">不同时间的观测不能直接作为同一时刻的目标状态。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">11</data>
+</edge>
+<edge source="传感器融合" target="相机与雷达外参">
+  <data key="relation">依赖</data>
+  <data key="description">依赖</data>
+  <data key="evidence">外参把相机和雷达观测转换到公共坐标系。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">12</data>
+</edge>
+<edge source="传感器融合" target="目标跟踪">
+  <data key="relation">支撑</data>
+  <data key="description">支撑</data>
+  <data key="evidence">融合可让跟踪器得到互补的速度和位置测量。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">17</data>
+</edge>
+<edge source="传感器融合" target="传感器融合流程图">
+  <data key="relation">展示</data>
+  <data key="description">展示</data>
+  <data key="evidence">摄像头、激光雷达和毫米波雷达的数据先对齐时间和坐标，再结合各观测的可靠性估计目标状态。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">2</data>
+</edge>
+<edge source="三维点云" target="目标检测">
+  <data key="relation">输入</data>
+  <data key="description">输入</data>
+  <data key="evidence">点云几何用于检测车辆和行人等障碍物。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">15</data>
+</edge>
+<edge source="三维点云" target="激光雷达测距示意">
+  <data key="relation">展示</data>
+  <data key="description">展示</data>
+  <data key="evidence">激光脉冲照射目标表面后返回传感器。往返飞行时间乘以光速再除以二，可估算目标距离。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">1</data>
+</edge>
+<edge source="目标检测" target="目标跟踪">
+  <data key="relation">支撑</data>
+  <data key="description">支撑</data>
+  <data key="evidence">检测结果经时序关联构成跟踪对象。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">16</data>
+</edge>
+<edge source="目标跟踪" target="运动预测">
+  <data key="relation">支撑</data>
+  <data key="description">支撑</data>
+  <data key="evidence">轨迹历史是预测未来运动的输入。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">18</data>
+</edge>
+<edge source="时间同步" target="传感器融合流程图">
+  <data key="relation">展示</data>
+  <data key="description">展示</data>
+  <data key="evidence">摄像头、激光雷达和毫米波雷达的数据先对齐时间和坐标，再结合各观测的可靠性估计目标状态。</data>
+  <data key="source_id">chunk-sensors</data>
+  <data key="weight">1.0</data>
+  <data key="order">2</data>
+</edge>
+<edge source="地图匹配" target="高精地图">
+  <data key="relation">依赖</data>
+  <data key="description">依赖</data>
+  <data key="evidence">稳定地图特征可约束车辆的位置与姿态。</data>
+  <data key="source_id">chunk-localization</data>
+  <data key="weight">1.0</data>
+  <data key="order">5</data>
+</edge>
+<edge source="行为决策" target="运动预测">
+  <data key="relation">依赖</data>
+  <data key="description">依赖</data>
+  <data key="evidence">需要估计其他道路使用者后续的可能动作。</data>
+  <data key="source_id">chunk-planning</data>
+  <data key="weight">1.0</data>
+  <data key="order">3</data>
+</edge>
+<edge source="运动预测" target="轨迹规划">
+  <data key="relation">依赖</data>
+  <data key="description">依赖</data>
+  <data key="evidence">预测轨迹帮助检测未来潜在冲突。</data>
+  <data key="source_id">chunk-planning</data>
+  <data key="weight">1.0</data>
+  <data key="order">7</data>
+</edge>
+<edge source="轨迹规划" target="碰撞检查">
+  <data key="relation">依赖</data>
+  <data key="description">依赖</data>
+  <data key="evidence">候选轨迹需验证保持可接受的空间间距。</data>
+  <data key="source_id">chunk-planning</data>
+  <data key="weight">1.0</data>
+  <data key="order">4</data>
+</edge>
+<edge source="轨迹规划" target="速度曲线">
+  <data key="relation">输出</data>
+  <data key="description">输出</data>
+  <data key="evidence">每个轨迹时刻对应车辆目标速度。</data>
+  <data key="source_id">chunk-planning</data>
+  <data key="weight">1.0</data>
+  <data key="order">5</data>
+</edge>
+<edge source="轨迹规划" target="车辆动力学">
+  <data key="relation">依赖</data>
+  <data key="description">依赖</data>
+  <data key="evidence">可执行轨迹必须符合转向、加速度和制动能力。</data>
+  <data key="source_id">chunk-planning</data>
+  <data key="weight">1.0</data>
+  <data key="order">6</data>
+</edge>
+<edge source="速度曲线" target="纵向控制">
+  <data key="relation">输入</data>
+  <data key="description">输入</data>
+  <data key="evidence">纵向控制根据目标速度计算加减速指令。</data>
+  <data key="source_id">chunk-control</data>
+  <data key="weight">1.0</data>
+  <data key="order">5</data>
+</edge>
+<edge source="横向控制" target="轨迹跟踪误差">
+  <data key="relation">输入</data>
+  <data key="description">输入</data>
+  <data key="evidence">测得的横向和航向偏差用于反馈。</data>
+  <data key="source_id">chunk-control</data>
+  <data key="weight">1.0</data>
+  <data key="order">4</data>
+</edge>
+<edge source="运行设计域" target="最小风险策略">
+  <data key="relation">支撑</data>
+  <data key="description">支撑</data>
+  <data key="evidence">能力边界决定何时评估或触发降级。</data>
+  <data key="source_id">chunk-safety</data>
+  <data key="weight">1.0</data>
+  <data key="order">4</data>
+</edge>
+<edge source="最小风险策略" target="感知置信度">
+  <data key="relation">输入</data>
+  <data key="description">输入</data>
+  <data key="evidence">置信度持续过低时可纳入降级决策。</data>
+  <data key="source_id">chunk-safety</data>
+  <data key="weight">1.0</data>
+  <data key="order">5</data>
+</edge>
+</graph></graphml>

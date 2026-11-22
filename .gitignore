@@ -1,0 +1,30 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Runtime files
+data/cache/
+data/uploads/
+data/backups/
+data/private/
+static/resources/
+*.log
+
+# Temporary files
+*.tmp
+*.bak

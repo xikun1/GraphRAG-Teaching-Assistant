@@ -1,0 +1,1853 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GraphRAG Teaching Assistant</title>
+  <script src="/static/vendor/vis-network.min.js"></script>
+  <script src="/static/vendor/marked.umd.js"></script>
+  <script src="/static/vendor/purify.min.js"></script>
+  <link href="/static/vendor/fontawesome/css/fontawesome.min.css" rel="stylesheet">
+  <link href="/static/vendor/fontawesome/css/solid.min.css" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    :root { --ai-width: 480px; }
+    @media (max-width: 680px) { :root { --ai-width: 92vw; } }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", sans-serif; background: #f5f7fb; color: #1f2937; overflow: hidden; }
+    .wrap { width: 100%; height: 100vh; padding: 14px 16px; display: flex; flex-direction: column; transition: margin-right 0.3s ease; }
+    .header { margin-bottom: 10px; }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    .sub { color: #4b5563; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+    button, input, select { font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid #d1d5db; background: white; cursor: pointer; outline: none; transition: all 0.2s; }
+    .toolbar-select { min-width: 128px; color: #334155; max-width: 180px; }
+    .toolbar-select:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.10); }
+    button:hover:not(:disabled) { background: #f1f5f9; }
+    button:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-allowed; border-color: #e5e7eb; }
+
+    .btn-active { background: #dbeafe !important; color: #2563eb !important; border-color: #bfdbfe !important; }
+    .btn-primary { background: #2563eb !important; color: white !important; border: none; }
+    .btn-primary:hover:not(:disabled) { background: #1d4ed8 !important; }
+    .btn-danger { background: #ef4444 !important; color: white !important; border: none; }
+    .btn-danger:hover { background: #dc2626 !important; }
+
+    /* 搜索框下拉列表的样式 */
+    .search-container { position: relative; display: inline-block; }
+    .search-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #d1d5db; border-radius: 8px; max-height: 250px; overflow-y: auto; z-index: 2000; padding: 0; margin: 4px 0 0 0; list-style: none; display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+    .search-dropdown li { padding: 10px 12px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #f1f5f9; color: #374151; }
+    .search-dropdown li:last-child { border-bottom: none; }
+    .search-dropdown li:hover { background: #f8fafc; color: #2563eb; font-weight: 500; }
+
+    /* 清空按钮的小叉号样式 */
+    .clear-search-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; cursor: pointer; display: none; font-size: 15px; transition: color 0.2s; }
+    .clear-search-icon:hover { color: #4b5563; }
+
+    .main { display: flex; gap: 14px; align-items: stretch; flex: 1; min-height: 0; }
+    #network { flex: 1; background: white; border-radius: 14px; border: 1px solid #e5e7eb; box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08); }
+    .side { width: 390px; overflow-y: auto; background: white; border-radius: 14px; border: 1px solid #e5e7eb; padding: 14px; box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08); }
+
+    .panel-block { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #eef2f7; }
+    .panel-title { font-size: 14px; color: #6b7280; margin-bottom: 6px; font-weight:bold; }
+    .panel-text { font-size: 14px; line-height: 1.75; word-break: break-word; }
+    .legend { margin-top: 10px; font-size: 13px; display: flex; gap: 14px; flex-wrap: wrap; padding-bottom:10px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; vertical-align: middle; margin-right: 4px; }
+
+    /* 弹窗 Modal 样式 */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.5); z-index: 3000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
+    .modal-content { background: white; padding: 24px; border-radius: 16px; width: 450px; max-width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); animation: slideIn 0.3s ease-out forwards; }
+    .modal-content h3 { margin: 0 0 16px; font-size: 18px; color: #1e293b; }
+    .modal-content label { display: block; font-size: 13px; color: #475569; margin-bottom: 4px; font-weight: bold; }
+    .modal-content input[type="text"], .modal-content textarea { width: 100%; margin-bottom: 12px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; }
+    .modal-content input:focus, .modal-content textarea:focus { border-color: #2563eb; }
+    .modal-content textarea { height: 80px; resize: vertical; }
+    .modal-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+
+    .edit-img-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+    .edit-img-card { display: flex; flex-direction: column; background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; position: relative; }
+    .edit-img-card img { width: 100%; max-height: 150px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 8px; }
+    .edit-img-card textarea { height: 60px; margin-bottom: 0; font-size: 12px; }
+    .edit-img-remove { position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border: none; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .add-img-btn { width: 100%; padding: 12px; background: white; border: 1px dashed #cbd5e1; border-radius: 8px; color: #64748b; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+    .add-img-btn:hover { background: #f1f5f9; border-color: #94a3b8; color: #334155; }
+
+    @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    /* ========================================== */
+    /* 🌟 拓展资源页面 UI */
+    /* ========================================== */
+    .resource-page { width: 100%; height: 100vh; padding: 22px 26px; background: #f5f7fb; overflow-y: auto; }
+    .resource-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 18px; }
+    .resource-header h1 { margin: 0 0 8px; font-size: 24px; }
+    .resource-content { display: flex; flex-direction: column; gap: 22px; }
+    .resource-section { background: white; border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px; box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08); }
+    .resource-section h2 { margin: 0 0 14px; font-size: 19px; border-left: 5px solid #2563eb; padding-left: 10px; }
+    .resource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    .resource-card { display: flex; gap: 12px; padding: 14px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fafafa; transition: transform 0.18s ease, box-shadow 0.18s ease; }
+    .resource-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10); }
+    .resource-icon { width: 42px; height: 42px; border-radius: 10px; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .resource-title { font-weight: 700; font-size: 15px; line-height: 1.5; margin-bottom: 6px; }
+    .resource-meta { font-size: 12px; color: #6b7280; margin-bottom: 10px; }
+    .resource-download { display: inline-block; text-decoration: none; color: white; background: #2563eb; padding: 7px 11px; border-radius: 8px; font-size: 13px; }
+    .resource-download:hover { background: #1d4ed8; }
+    .resource-empty { background: white; border: 1px dashed #cbd5e1; border-radius: 14px; padding: 26px; color: #64748b; text-align: center; }
+
+    /* ========================================== */
+    /* 🌟 AI 智能问答系统 - 右侧抽屉 UI (进阶版) */
+    /* ========================================== */
+    .ai-toggle-btn {
+        position: fixed; right: 0; top: 50%; transform: translateY(-50%);
+        background: #2563eb; color: white; border: none; padding: 15px 10px;
+        border-radius: 10px 0 0 10px; cursor: pointer; z-index: 1001;
+        box-shadow: -4px 0 10px rgba(0,0,0,0.1); font-weight: bold;
+        transition: right 0.3s ease, background 0.3s; writing-mode: vertical-rl;
+        letter-spacing: 2px;
+    }
+    .ai-toggle-btn:hover { background: #1d4ed8; }
+    .ai-toggle-btn.shift { right: var(--ai-width); }
+
+    .ai-sidebar {
+        position: fixed; top: 0; right: calc(-1 * (var(--ai-width) + 24px));
+        width: var(--ai-width); height: 100vh;
+        background: white; box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+        transition: right 0.3s ease; z-index: 1000; display: flex; flex-direction: column;
+    }
+    .ai-sidebar.open { right: 0; }
+
+    .ai-header {
+        padding: 16px; background: #1e293b; color: white; display: flex; justify-content: space-between; align-items: center;
+    }
+    .ai-header h2 { margin: 0; font-size: 16px; display:flex; align-items:center; gap:8px; }
+    .ai-close-btn { background: transparent; border: none; color: white; font-size: 20px; cursor: pointer; padding: 0; }
+
+    .ai-chat-history {
+        flex: 1; padding: 16px; overflow-y: auto; background: #f8fafc;
+        display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth;
+    }
+
+    .chat-bubble { max-width: 92%; padding: 14px 18px; border-radius: 12px; font-size: 14px; line-height: 1.6; word-wrap: break-word; position: relative; }
+
+    .chat-user { align-self: flex-end; background: #2563eb; color: white; border-bottom-right-radius: 4px; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.1); }
+
+    /* Markdown 样式强化 */
+    .chat-ai { align-self: flex-start; background: white; color: #1e293b; border: 1px solid #e2e8f0; border-bottom-left-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+    .chat-ai p { margin: 0 0 10px; }
+    .chat-ai p:last-child { margin-bottom: 0; }
+    .chat-ai ul, .chat-ai ol { margin: 8px 0; padding-left: 24px; }
+    .chat-ai li { margin-bottom: 4px; }
+    .chat-ai strong { color: #0f172a; font-weight: 700; }
+    .chat-ai pre { background: #f1f5f9; padding: 12px; border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 13px; border: 1px solid #e2e8f0; }
+    .chat-ai code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #db2777; }
+    /* 宽表格横向滚动，避免被挤成竖排 */
+    .chat-ai table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+    .chat-ai th, .chat-ai td { border: 1px solid #e2e8f0; padding: 6px 10px; text-align: left; vertical-align: top; min-width: 70px; }
+    .chat-ai th { background: #f8fafc; font-weight: 700; white-space: nowrap; }
+    .chat-ai img { max-width: 100%; border-radius: 6px; }
+
+    /* 图谱命中静默提示 UI */
+    .chat-local-graph { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 12px; padding: 10px 14px; margin-bottom: -10px; align-self: flex-start; border-radius: 8px; border-bottom-left-radius: 4px; }
+
+    /* 多模态气泡图片展示 */
+    .chat-user-media-container { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .chat-user-media-img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); }
+    .chat-user-media-pdf { background: rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 6px; font-size: 12px; display:flex; align-items:center; gap:6px; }
+
+    .ai-input-area { padding: 16px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; align-items:flex-end; }
+    .ai-input-area input[type="text"] { flex: 1; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size:14px; transition: border 0.2s; }
+    .ai-input-area input[type="text"]:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+    .ai-send-btn { background: #2563eb; color: white; border: none; height: 44px; padding: 0 20px; border-radius: 8px; font-weight: bold; transition: background 0.2s; }
+    .ai-send-btn:hover { background: #1d4ed8; }
+    .ai-attach-btn { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; height: 44px; padding: 0 16px; transition: all 0.2s; }
+    .ai-attach-btn:hover { background: #e2e8f0; color: #1e293b; }
+
+    /* 优化附件列表 UI */
+    .ai-attachment-list { padding: 0 16px 12px; background: white; display:none; flex-wrap: wrap; gap: 8px; }
+    .ai-attachment-item { position:relative; width: 64px; height: 64px; border-radius: 8px; border: 1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; background:#f8fafc; overflow:hidden; }
+    .ai-attachment-preview { width:100%; height:100%; object-fit:cover; }
+    .ai-attachment-remove { position:absolute; top:2px; right:2px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; width:20px; height:20px; font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity 0.2s; }
+    .ai-attachment-item:hover .ai-attachment-remove { opacity:1; }
+
+    /* 加载状态气泡：旋转 spinner + 文字，气泡随内容自适应 */
+    .chat-status {
+      align-self: flex-start;
+      display: inline-flex; align-items: center; gap: 10px;
+      max-width: 92%; padding: 11px 15px;
+      background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 12px; border-bottom-left-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      font-size: 13px; color: #475569; font-weight: 500;
+    }
+    .chat-status .spinner {
+      width: 15px; height: 15px; flex-shrink: 0;
+      border: 2px solid #dbeafe; border-top-color: #2563eb;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    .chat-status .status-label { line-height: 1.5; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* 性能警告悬浮提示框 */
+    .perf-toast {
+        position: fixed;
+        top: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #fffbeb;
+        color: #92400e;
+        border: 1px solid #fde68a;
+        padding: 10px 18px;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        font-size: 13px;
+        z-index: 5000;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        animation: toastFadeIn 0.3s ease-out forwards;
+    }
+    @keyframes toastFadeIn {
+        from { opacity: 0; transform: translate(-50%, -15px); }
+        to { opacity: 1; transform: translate(-50%, 0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="perfToast" class="perf-toast">
+    <i class="fas fa-exclamation-triangle" style="color: #d97706;"></i>
+    提示：全局显示关系词可能会导致设备出现渲染卡顿，建议隐藏
+  </div>
+
+  <button id="aiToggleBtn" class="ai-toggle-btn" onclick="toggleAiPanel()"><i class="fas fa-robot"></i> 智能问答</button>
+
+  <div id="aiSidebar" class="ai-sidebar">
+    <div class="ai-header">
+      <h2><i class="fas fa-project-diagram"></i> 图谱多模态助手</h2>
+      <button class="ai-close-btn" onclick="toggleAiPanel()" aria-label="关闭问答"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="aiChatHistory" class="ai-chat-history">
+      <div class="chat-bubble chat-ai">
+        您好！我是基于您知识图谱的多模态 RAG 助手。<br><br>
+        提问后，我会先对图谱做<b>语义检索</b>，并按相关度动态筛选<b>候选关联图像</b>；上传图片或问题明确涉及图像时才进行视觉分析，普通文字问题只使用图像名称与说明。命中的实体可<b>点击定位</b>。<br><br>
+        也可点击左下角别针上传图片或 PDF 作为补充资料。
+      </div>
+    </div>
+    <div id="aiAttachmentList" class="ai-attachment-list"></div>
+    <div class="ai-input-area">
+      <input type="file" id="aiFileInput" accept="image/*,.pdf" multiple style="display:none;" />
+      <button class="ai-attach-btn" onclick="document.getElementById('aiFileInput').click()" title="附加图片或PDF"><i class="fas fa-paperclip"></i></button>
+      <input type="text" id="aiInputMessage" placeholder="输入您的问题..." onkeypress="handleKeyPress(event)" />
+      <button class="ai-send-btn" onclick="sendMessage()" aria-label="发送"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+
+  <div class="wrap" id="mainWrap">
+    <div class="header">
+      <h1>《人工智能与无人驾驶技术》知识图谱</h1>
+      <div class="sub">
+        <span id="graphInfo">正在解析 GraphML 数据...</span>
+        <span id="saveStatus" style="color: #059669; font-weight: bold; margin-left: 10px; display: none;"><i class="fas fa-check-circle"></i> 数据已保存同步</span>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button onclick="network.fit({ animation: { duration: 800, easingFunction: 'easeInOutQuad' } })"><i class="fas fa-expand-arrows-alt"></i> 适配画布</button>
+
+      <button onclick="showResourcePage()"><i class="fas fa-book-open"></i> 拓展资源</button>
+
+      <div class="search-container">
+        <input id="searchInput" placeholder="搜索节点名..." style="min-width:220px; padding-right: 30px;" autocomplete="off" />
+        <i class="fas fa-times-circle clear-search-icon" id="clearSearchBtn" title="清空搜索"></i>
+        <ul id="searchDropdown" class="search-dropdown"></ul>
+      </div>
+      <button id="showAllBtn" onclick="showFullGraph()" style="display:none; background:#eff6ff; color:#2563eb; border-color:#bfdbfe;"><i class="fas fa-eye"></i> 显示全部</button>
+      <select id="typeFilter" class="toolbar-select" onchange="applyTypeFilter()" title="&#25353;&#23454;&#20307;&#31867;&#22411;&#31579;&#36873;">
+        <option value="">&#20840;&#37096;&#31867;&#22411;</option>
+      </select>
+      <button id="edgeLabelBtn" onclick="toggleEdgeLabels()" title="&#26174;&#31034;&#25110;&#38544;&#34255;&#30011;&#24067;&#19978;&#30340;&#30701;&#20851;&#31995;&#35789;"><i class="fas fa-tags"></i> &#20851;&#31995;&#35789;</button>
+
+      <div id="adminToolsGroup" style="display: none; gap: 10px; align-items: center;">
+        <div style="width: 1px; height: 24px; background: #cbd5e1; margin: 0 4px;"></div>
+        <button onclick="openNodeModal()"><i class="fas fa-plus"></i> 新增</button>
+        <button id="editBtn" onclick="openNodeModal(true)" disabled><i class="fas fa-edit"></i> 编辑</button>
+        <button id="deleteBtn" onclick="deleteSelectedNode()" disabled><i class="fas fa-trash"></i> 删除</button>
+        <button id="relationBtn" onclick="toggleRelationMode()"><i class="fas fa-link"></i> 关系</button>
+        <div style="width: 1px; height: 24px; background: #cbd5e1; margin: 0 4px;"></div>
+        <button id="saveGraphBtn" class="btn-primary" onclick="saveGraphToServer().catch(err => alert('\u4fdd\u5b58\u5931\u8d25\uff1a' + err.message))"><i class="fas fa-cloud-upload-alt"></i> 保存修改</button>
+      </div>
+
+    </div>
+    <div class="main">
+      <div class="side" id="detailPanel">
+        <h2>节点详情</h2>
+        <div class="panel-text">请点击右侧图谱中的节点，查看更多详细内容。</div>
+      </div>
+      <div id="network"></div>
+    </div>
+
+    <div class="legend">
+      <span><span class="dot" style="background:#c792ea"></span> 人物/主体</span>
+      <span><span class="dot" style="background:#ff8a65"></span> 组织/机构</span>
+      <span><span class="dot" style="background:#ffd54f"></span> 地理/位置</span>
+      <span><span class="dot" style="background:#81c784"></span> 事件/活动</span>
+      <span><span class="dot" style="background:#4db6ac"></span> 技术/算法</span>
+      <span><span class="dot" style="background:#64b5f6"></span> 概念/性质</span>
+      <span><span class="dot" style="background:#f48fb1"></span> 产品/设备</span>
+      <span><span class="dot" style="background:#6686cc"></span> 性能/指标</span>
+      <span><span class="dot" style="background:#f59e0b"></span> 图片</span>
+    </div>
+  </div>
+
+  <div id="resourcePage" class="resource-page" style="display:none;">
+    <div class="resource-header">
+      <div>
+        <h1>拓展资源库</h1>
+        <div class="sub">项目相关论文、书籍、专利等资料，可点击下载到本地阅读。</div>
+      </div>
+      <button onclick="showGraphPage()"><i class="fas fa-arrow-left"></i> 返回图谱</button>
+    </div>
+    <div id="resourceContent" class="resource-content"></div>
+  </div>
+
+  <div id="nodeModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3 id="nodeModalTitle">新增节点</h3>
+      <input type="hidden" id="nodeOriginalId">
+
+      <label>节点名称 (唯一 ID)</label>
+      <input type="text" id="nodeLabelInput" placeholder="例如：人工智能技术">
+
+      <label>实体类型 / 分组</label>
+      <input type="text" id="nodeTypeInput" list="nodeTypeOptions" placeholder="&#20363;&#22914;&#65306;&#26680;&#24515;&#25216;&#26415;&#12289;&#22522;&#30784;&#27010;&#24565;&#12289;&#32452;&#32455;&#26426;&#26500;...">
+      <datalist id="nodeTypeOptions"></datalist>
+
+      <label>详细说明描述</label>
+      <textarea id="nodeDescInput" placeholder="输入该实体的详细描述..."></textarea>
+
+      <label style="margin-top:8px;">关联图片与说明</label>
+      <div id="editImagesContainer" class="edit-img-list"></div>
+
+      <input type="file" id="newImageUploader" accept="image/*" style="display:none" onchange="handleNewImageSelected(event)" />
+      <button class="add-img-btn" onclick="document.getElementById('newImageUploader').click()"><i class="fas fa-plus"></i> 添加新图片</button>
+
+      <div class="modal-footer">
+        <button onclick="closeModals()">取消</button>
+        <button class="btn-primary" id="saveNodeBtn" onclick="saveNodeData()">确定保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="edgeModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3 id="edgeModalTitle">配置节点关系</h3>
+      <div style="font-size: 13px; color: #475569; margin-bottom: 12px; background: #f8fafc; padding: 8px; border-radius: 6px;">
+        <div><b>起点：</b> <span id="edgeSourceText"></span></div>
+        <div style="margin-top:4px;"><b>终点：</b> <span id="edgeTargetText"></span></div>
+      </div>
+      <input type="hidden" id="edgeSourceId">
+      <input type="hidden" id="edgeTargetId">
+      <input type="hidden" id="edgeExistingId">
+
+      <label>关系短词（最多4个字）</label>
+      <input type="text" id="edgeDescInput" placeholder="例如：包含、应用实例、提升...">
+      <label>&#20851;&#31995;&#35777;&#25454;</label>
+      <textarea id="edgeEvidenceInput" placeholder="&#35828;&#26126;&#20026;&#20160;&#20040;&#20004;&#20010;&#33410;&#28857;&#23384;&#22312;&#35813;&#20851;&#31995;..."></textarea>
+
+      <div class="modal-footer">
+        <button id="edgeDeleteBtn" class="btn-danger" style="display:none;" onclick="deleteEdgeData()">解除关系</button>
+        <div style="display:flex; gap:10px; margin-left:auto;">
+          <button onclick="closeModals()">取消</button>
+          <button class="btn-primary" onclick="saveEdgeData()">确定保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 🌟 拓展资源页面逻辑
+    // ==========================================
+    function resourceEscapeAttr(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function showResourcePage() {
+      const mainWrap = document.getElementById('mainWrap');
+      const resourcePage = document.getElementById('resourcePage');
+      const aiSidebarEl = document.getElementById('aiSidebar');
+      const aiToggleEl = document.getElementById('aiToggleBtn');
+
+      if (mainWrap) mainWrap.style.display = 'none';
+      if (resourcePage) resourcePage.style.display = 'block';
+      if (aiSidebarEl) aiSidebarEl.classList.remove('open');
+      if (aiToggleEl) {
+        aiToggleEl.style.display = 'none';
+        aiToggleEl.classList.remove('shift');
+      }
+      isPanelOpen = false;
+      renderResourceContent();
+    }
+
+    function showGraphPage() {
+      const mainWrap = document.getElementById('mainWrap');
+      const resourcePage = document.getElementById('resourcePage');
+      const aiToggleEl = document.getElementById('aiToggleBtn');
+
+      if (resourcePage) resourcePage.style.display = 'none';
+      if (mainWrap) mainWrap.style.display = 'flex';
+      if (aiToggleEl) aiToggleEl.style.display = 'block';
+
+      setTimeout(() => {
+        try { network.redraw(); } catch (e) {}
+      }, 50);
+    }
+
+    async function renderResourceContent() {
+      const box = document.getElementById('resourceContent');
+      if (!box) return;
+
+      let resources;
+      try {
+        const response = await fetch('/api/resources');
+        if (!response.ok) throw new Error('Resource list unavailable');
+        resources = await response.json();
+      } catch {
+        box.textContent = '暂时无法加载拓展资源，请稍后重试。';
+        return;
+      }
+
+      let pageHtml = '';
+      Object.entries(resources).forEach(([category, items]) => {
+        if (!items.length) return;
+
+        pageHtml += `
+          <div class="resource-section">
+            <h2>${escapeHtml(category)}</h2>
+            <div class="resource-grid">
+        `;
+
+        items.forEach(item => {
+          pageHtml += `
+            <div class="resource-card">
+              <div class="resource-icon"><i class="fas fa-file-pdf"></i></div>
+              <div>
+                <div class="resource-title">${escapeHtml(item.title || '')}</div>
+                <div class="resource-meta">资源路径：${escapeHtml(item.file || '')}</div>
+                <a class="resource-download" href="${resourceEscapeAttr(item.file || '')}" download>
+                  <i class="fas fa-download"></i> 查看文件
+                </a>
+              </div>
+            </div>
+          `;
+        });
+
+        pageHtml += `</div></div>`;
+      });
+
+      if (!pageHtml.trim()) {
+        pageHtml = `<div class="resource-empty">暂无拓展资源。可将有权使用的 PDF 放入 static/resources 下的 papers、books 或 patents 文件夹。</div>`;
+      }
+      box.innerHTML = pageHtml;
+    }
+
+    // ==========================================
+    // 1. 图谱解析与基础视觉配置
+    // ==========================================
+    const nodes = new vis.DataSet([]);
+    const edges = new vis.DataSet([]);
+    const LARGE_GRAPH_EDGE_LIMIT = 900;
+    let graphIsLarge = false;
+    let edgeLabelsEnabled = false;
+    const EDGE_LABEL_FONT_VISIBLE = { size: 11, align: "middle", color: "#475569", strokeWidth: 3, strokeColor: "#ffffff" };
+    const EDGE_LABEL_FONT_HIDDEN = { size: 0, align: "middle", color: "rgba(0,0,0,0)", strokeWidth: 0, strokeColor: "rgba(0,0,0,0)" };
+
+    // 【修改点】：更新物理配置，增加阻尼、调整步长，并彻底关闭预加载以呈现动画
+    function getPhysicsOptions(isLarge, stabilize = false) {
+        const profile = isLarge
+            ? {
+                gravitationalConstant: -50,
+                centralGravity: 0.005,
+                springLength: 150,
+                springConstant: 0.02,
+                damping: 0.95,
+                avoidOverlap: 0.2,
+                maxVelocity: 20,
+                minVelocity: 0.5,
+                timestep: 0.40
+            }
+            : {
+                gravitationalConstant: -60,
+                centralGravity: 0.006,
+                springLength: 190,
+                springConstant: 0.035,
+                damping: 0.75,
+                avoidOverlap: 0.25,
+                maxVelocity: 30,
+                minVelocity: 0.20,
+                timestep: 0.45
+            };
+        return {
+            enabled: true,
+            solver: 'forceAtlas2Based',
+            forceAtlas2Based: {
+                gravitationalConstant: profile.gravitationalConstant,
+                centralGravity: profile.centralGravity,
+                springLength: profile.springLength,
+                springConstant: profile.springConstant,
+                damping: profile.damping,
+                avoidOverlap: profile.avoidOverlap
+            },
+            maxVelocity: profile.maxVelocity,
+            minVelocity: profile.minVelocity,
+            timestep: profile.timestep,
+            adaptiveTimestep: true, // 开启自适应步长防炸图
+            stabilization: false    // 关闭后台预计算，直接展示飞入动画
+        };
+    }
+
+    const networkOptions = {
+        autoResize: true,
+        layout: { improvedLayout: false },
+        interaction: { hover: true, navigationButtons: true, keyboard: true, hideEdgesOnDrag: false, hideEdgesOnZoom: true },
+        physics: { enabled: false },
+        nodes: { borderWidth: 2, shadow: true },
+        edges: { color: { color: "#94a3b8", highlight: "#3b82f6" }, font: EDGE_LABEL_FONT_HIDDEN, smooth: { enabled: true, type: 'continuous' } }
+    };
+
+    const networkContainer = document.getElementById("network");
+    const network = new vis.Network(networkContainer, {nodes, edges}, networkOptions);
+    let resumePhysicsWhenVisible = false;
+    let physicsRunToken = 0;
+    let explicitPhysicsWake = false;
+    networkContainer.dataset.physicsMode = 'adaptive-frame';
+    networkContainer.dataset.physicsState = 'idle';
+
+    function getPhysicsSampleIds() {
+        const visibleIds = nodes.get()
+            .filter((node) => !node.hidden)
+            .map((node) => node.id);
+        const sampleLimit = graphIsLarge ? 32 : 48;
+        if (visibleIds.length <= sampleLimit) return visibleIds;
+        const step = visibleIds.length / sampleLimit;
+        return Array.from({length: sampleLimit}, (_, index) => visibleIds[Math.floor(index * step)]);
+    }
+
+    function beginPhysicsMonitor(state = 'stabilizing') {
+        if (!nodes.length || document.hidden || state === 'dragging' || state === 'paused') return;
+        const token = ++physicsRunToken;
+        const sampleIds = getPhysicsSampleIds();
+        const startedAt = performance.now();
+        const minimumRunMs = graphIsLarge ? 1200 : 1600;
+        const maximumRunMs = graphIsLarge
+            ? (state === 'stabilizing' ? 6500 : 4800)
+            : (state === 'stabilizing' ? 8500 : 6500);
+        const movementThreshold = graphIsLarge ? 0.28 : 0.18;
+        let previousPositions = null;
+        let stableSamples = 0;
+        let lastSampleAt = 0;
+        networkContainer.dataset.physicsState = state;
+
+        function checkMovement(now) {
+            if (token !== physicsRunToken || document.hidden) return;
+            const currentState = networkContainer.dataset.physicsState;
+            if (currentState === 'dragging' || currentState === 'paused') return;
+            if (now - lastSampleAt < 260) {
+                requestAnimationFrame(checkMovement);
+                return;
+            }
+            lastSampleAt = now;
+            const currentPositions = network.getPositions(sampleIds);
+            let movementTotal = 0;
+            let movementCount = 0;
+            if (previousPositions) {
+                sampleIds.forEach((id) => {
+                    const before = previousPositions[id];
+                    const after = currentPositions[id];
+                    if (!before || !after) return;
+                    movementTotal += Math.hypot(after.x - before.x, after.y - before.y);
+                    movementCount += 1;
+                });
+            }
+            const averageMovement = movementCount ? movementTotal / movementCount : Infinity;
+            stableSamples = averageMovement < movementThreshold ? stableSamples + 1 : 0;
+            previousPositions = currentPositions;
+            const elapsed = now - startedAt;
+
+            if ((elapsed >= minimumRunMs && stableSamples >= 3) || elapsed >= maximumRunMs) {
+                if (token === physicsRunToken) {
+                    physicsRunToken += 1;
+                    // 【修改点】：注释掉了 network.stopSimulation()，允许引擎在达成平衡后依然持续响应
+                    // network.stopSimulation();
+                    networkContainer.dataset.physicsState = 'settled';
+                }
+                return;
+            }
+            requestAnimationFrame(checkMovement);
+        }
+
+        requestAnimationFrame(checkMovement);
+    }
+
+    function wakePhysics(state = 'settling') {
+        if (!nodes.length || document.hidden) return;
+        networkContainer.dataset.physicsState = state;
+        explicitPhysicsWake = true;
+        network.startSimulation();
+        explicitPhysicsWake = false;
+        beginPhysicsMonitor(state);
+    }
+
+    network.on("startStabilizing", function () {
+        if (explicitPhysicsWake) return;
+        const state = networkContainer.dataset.physicsState;
+        if (state === 'dragging' || state === 'paused') return;
+        beginPhysicsMonitor(state === 'settling' ? 'settling' : 'stabilizing');
+    });
+    network.on("stabilized", function () {
+        if (networkContainer.dataset.physicsState === 'dragging') return;
+        physicsRunToken += 1;
+        networkContainer.dataset.physicsState = 'settled';
+    });
+    network.on("dragStart", function (params) {
+        if (!params.nodes || !params.nodes.length) return;
+        physicsRunToken += 1;
+        networkContainer.dataset.physicsState = 'dragging';
+        network.startSimulation();
+    });
+    network.on("dragEnd", function (params) {
+        if (!params.nodes || !params.nodes.length) return;
+        wakePhysics('settling');
+    });
+
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) {
+            resumePhysicsWhenVisible = networkContainer.dataset.physicsState !== 'settled';
+            physicsRunToken += 1;
+            network.stopSimulation();
+            networkContainer.dataset.physicsState = 'paused';
+        } else if (resumePhysicsWhenVisible && nodes.length) {
+            resumePhysicsWhenVisible = false;
+            wakePhysics('settling');
+        } else {
+            resumePhysicsWhenVisible = false;
+            networkContainer.dataset.physicsState = 'settled';
+        }
+    });
+    function escapeHtml(str) {
+        return String(str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function getNodeColorByType(typeStr) {
+        const t = (typeStr || '').toUpperCase();
+        let hex = "#bdbdbd"; // 默认节点颜色
+
+        if (t.includes("\u56fe\u7247") || t.includes("ORI_IMG") || t === "IMG") hex = "#f59e0b";
+        else if (t.includes("PERSON") || t.includes("\u4eba\u7269")) hex = "#c792ea";
+        else if (t.includes("ORG") || t.includes("公司") || t.includes("组织") || t.includes("机构")) hex = "#ff8a65";
+        else if (t.includes("GEO") || t.includes("LOC") || t.includes("地理") || t.includes("位置")) hex = "#ffd54f";
+        else if (t.includes("EVENT") || t.includes("事件")) hex = "#81c784";
+        else if (t.includes("TECH") || t.includes("技术") || t.includes("核心技术")) hex = "#4db6ac";
+        else if (t.includes("CONCEPT") || t.includes("概念") || t.includes("基础")) hex = "#64b5f6";
+        else if (t.includes("PRODUCT") || t.includes("产品") || t.includes("设备")) hex = "#f48fb1";
+        else if (t.includes("METRIC") || t.includes("指标") || t.includes("性能")) hex = "#6686cc";
+
+        // 内部颜色计算函数：amt 为负数则变深，为正数则变浅
+        const shadeColor = (col, amt) => {
+            const num = parseInt(col.replace(/^#/, ''), 16);
+            const r = Math.max(0, Math.min(255, (num >> 16) + amt));
+            const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amt));
+            const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amt));
+            // 确保生成标准的六位十六进制颜色
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        };
+
+        return {
+            background: hex,
+            border: shadeColor(hex, -40), // 默认状态：边框变深40度，形成自然轮廓
+            highlight: {
+                background: shadeColor(hex, 15), // 选中状态：背景稍微提亮，增加浮出感
+                border: shadeColor(hex, -80)     // 选中状态：边框变深80度，更加醒目
+            },
+            hover: {
+                background: shadeColor(hex, 10), // 鼠标悬停：背景微微发光
+                border: shadeColor(hex, -60)     // 鼠标悬停：边框适度加深
+            }
+        };
+    }
+
+    function parseGraphML(xmlText) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+        const keyMap = {};
+
+        xmlDoc.querySelectorAll("key").forEach(k => { keyMap[k.getAttribute("id")] = k.getAttribute("attr.name"); });
+        const stripQuotes = (str) => str ? str.trim().replace(/^"|"$/g, '') : "";
+
+        const rawNodes = {};
+        xmlDoc.querySelectorAll("node").forEach(node => {
+            const id = stripQuotes(node.getAttribute("id"));
+            const nodeData = { id: id, label: id, value: 20, font: {size: 14}, associatedImages: [] };
+            node.querySelectorAll("data").forEach(d => { nodeData[keyMap[d.getAttribute("key")]] = stripQuotes(d.textContent); });
+            nodeData.group = nodeData.entity_type || 'UNKNOWN';
+            rawNodes[id] = nodeData;
+        });
+
+        const finalEdges = [];
+        const imageNodeIdsToRemove = new Set();
+
+        xmlDoc.querySelectorAll("edge").forEach(edge => {
+            const edgeData = {
+                from: stripQuotes(edge.getAttribute("source")),
+                to: stripQuotes(edge.getAttribute("target")),
+                arrows: 'to'
+            };
+            edge.querySelectorAll("data").forEach(d => { edgeData[keyMap[d.getAttribute("key")]] = stripQuotes(d.textContent); });
+            edgeData.title = edgeData.description || '关联';
+
+            const descLower = (edgeData.description || edgeData.title || "").toLowerCase();
+
+            if (descLower.includes("is the image of") || descLower.includes("是从") || descLower.includes("提取"))
+            {
+                let imgId = null, ownerId = null;
+                if (rawNodes[edgeData.from] && (rawNodes[edgeData.from].group === 'ORI_IMG' || rawNodes[edgeData.from].group === 'IMG')) { imgId = edgeData.from; ownerId = edgeData.to; }
+                else if (rawNodes[edgeData.to] && (rawNodes[edgeData.to].group === 'ORI_IMG' || rawNodes[edgeData.to].group === 'IMG')) { imgId = edgeData.to; ownerId = edgeData.from; }
+
+                if (imgId && ownerId && rawNodes[ownerId]) {
+                    imageNodeIdsToRemove.add(imgId);
+                    rawNodes[ownerId].associatedImages.push(rawNodes[imgId]);
+                } else { finalEdges.push(edgeData); }
+            } else { finalEdges.push(edgeData); }
+        });
+
+        const finalNodes = [];
+        Object.values(rawNodes).forEach(n => {
+            if (!imageNodeIdsToRemove.has(n.id)) {
+                n.shape = 'dot'; n.color = getNodeColorByType(n.group); finalNodes.push(n);
+            }
+        });
+        return { nodes: finalNodes, edges: finalEdges };
+    }
+
+    function toImageReference(node) {
+        return {
+            id: node.id,
+            label: node.label || node.id,
+            group: node.group,
+            raw_entity_type: node.raw_entity_type,
+            description: node.description || '',
+            source_id: node.source_id || '',
+            media_url: node.media_url || '',
+            is_image: true
+        };
+    }
+
+    async function loadGraphData() {
+        try {
+            const res = await fetch('/api/graph');
+            if (!res.ok) throw new Error('\u65e0\u6cd5\u8bfb\u53d6\u56fe\u8c31\u6570\u636e');
+            const payload = await res.json();
+            graphIsLarge = (payload.edges || []).length >= LARGE_GRAPH_EDGE_LIMIT;
+            edgeLabelsEnabled = !graphIsLarge;
+            const nodeMap = {};
+            (payload.nodes || []).forEach(raw => {
+                const item = {
+                    id: raw.id,
+                    label: raw.name || raw.id,
+                    value: raw.is_image ? 24 : Math.max(18, Math.min(38, 18 + Number(raw.degree || 0))),
+                    font: { size: 14 },
+                    group: raw.entity_type || '\u77e5\u8bc6\u6982\u5ff5',
+                    raw_entity_type: raw.raw_entity_type || raw.entity_type || '',
+                    description: raw.description || '',
+                    source_id: raw.source_id || '',
+                    media_url: raw.media_url || '',
+                    is_image: Boolean(raw.is_image),
+                    associatedImages: [],
+                    shape: 'dot'
+                };
+                item.color = getNodeColorByType(item.group);
+                if (item.is_image) item.associatedImages.push(toImageReference(item));
+                nodeMap[item.id] = item;
+            });
+            const edgeRows = (payload.edges || []).map((raw, idx) => {
+                const relation = raw.relation || '\u76f8\u5173';
+                const evidence = raw.evidence || raw.description || '';
+                const edge = {
+                    id: `edge-${idx}`,
+                    from: raw.source,
+                    to: raw.target,
+                    arrows: 'to',
+                    relation,
+                    label: relation,
+                    description: raw.description || relation,
+                    evidence,
+                    source_id: raw.source_id || '',
+                    weight: raw.weight || 1,
+                    title: evidence || relation
+                };
+                const fromNode = nodeMap[edge.from];
+                const toNode = nodeMap[edge.to];
+                if (fromNode && toNode) {
+                    if (fromNode.is_image && !toNode.associatedImages.some(img => img.id === fromNode.id)) toNode.associatedImages.push(toImageReference(fromNode));
+                    if (toNode.is_image && !fromNode.associatedImages.some(img => img.id === toNode.id)) fromNode.associatedImages.push(toImageReference(toNode));
+                }
+                return edge;
+            });
+
+            physicsRunToken += 1;
+            // 【修改点】：不再因为批量加载而关闭物理效果，允许渲染出动态飞入特效
+            // network.stopSimulation();
+            // network.setOptions({physics: {enabled: false}});
+
+            nodes.clear();
+            edges.clear();
+            nodes.add(Object.values(nodeMap));
+            edges.add(edgeRows);
+            const stats = payload.stats || {};
+            populateTypeFilters(stats.types || {});
+
+            const physicsProfile = getPhysicsOptions(graphIsLarge, false);
+            network.setOptions({
+                interaction: { hideEdgesOnDrag: false, hideEdgesOnZoom: true },
+                nodes: { shadow: !graphIsLarge },
+                edges: { smooth: { enabled: !graphIsLarge, type: 'continuous' } },
+                physics: physicsProfile
+            });
+            wakePhysics('stabilizing');
+            applyEdgeLabelVisibility();
+            const mergeNote = stats.merged_duplicates ? `\uff08\u5df2\u5408\u5e76 ${stats.merged_duplicates} \u4e2a\u91cd\u590d\u522b\u540d\uff09` : '';
+            document.getElementById('graphInfo').innerText = `\u5df2\u89e3\u6790 ${stats.nodes ?? nodes.length} \u4e2a\u552f\u4e00\u8282\u70b9${mergeNote}\uff0c${stats.edges ?? edges.length} \u6761\u6709\u6548\u5173\u7cfb\uff0c${stats.images ?? 0} \u5f20\u56fe\u7247\uff0c${Object.keys(stats.types || {}).length} \u79cd\u7c7b\u578b\u3002`;
+        } catch (err) {
+            console.error(err);
+            document.getElementById('graphInfo').innerText = `\u52a0\u8f7d\u56fe\u8c31\u5931\u8d25\uff1a${err.message}`;
+        }
+    }
+    window.addEventListener('DOMContentLoaded', loadGraphData);
+
+    function populateTypeFilters(typeCounts) {
+        const select = document.getElementById('typeFilter');
+        const datalist = document.getElementById('nodeTypeOptions');
+        const types = Object.keys(typeCounts).length
+            ? Object.keys(typeCounts)
+            : [...new Set(nodes.get().map(node => node.group).filter(Boolean))].sort();
+        select.innerHTML = '<option value="">\u5168\u90e8\u7c7b\u578b</option>';
+        datalist.innerHTML = '';
+        types.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = typeCounts[type] ? `${type} (${typeCounts[type]})` : type;
+            select.appendChild(option);
+            const suggestion = document.createElement('option');
+            suggestion.value = type;
+            datalist.appendChild(suggestion);
+        });
+    }
+
+    function updateEdgeLabelButton() {
+        const button = document.getElementById('edgeLabelBtn');
+        button.classList.toggle('btn-active', edgeLabelsEnabled);
+        button.innerHTML = `<i class="fas fa-tags"></i> ${edgeLabelsEnabled ? '\u9690\u85cf\u5173\u7cfb\u8bcd' : '\u663e\u793a\u5173\u7cfb\u8bcd'}`;
+    }
+
+    function applyEdgeLabelVisibility() {
+        network.setOptions({
+            edges: {
+                font: edgeLabelsEnabled
+                    ? { ...EDGE_LABEL_FONT_VISIBLE }
+                    : { ...EDGE_LABEL_FONT_HIDDEN }
+            }
+        });
+        network.redraw();
+        updateEdgeLabelButton();
+    }
+
+    // 增加一个定时器变量用于控制提示框消失
+    let perfToastTimer = null;
+
+    function showPerfToast() {
+        const toast = document.getElementById('perfToast');
+        toast.style.display = 'flex';
+        clearTimeout(perfToastTimer);
+        // 3.5秒后自动淡出/隐藏
+        perfToastTimer = setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3500);
+    }
+
+    function toggleEdgeLabels() {
+        edgeLabelsEnabled = !edgeLabelsEnabled;
+        applyEdgeLabelVisibility();
+
+        // 当状态切换为“显示”时，弹出性能警告
+        if (edgeLabelsEnabled) {
+            showPerfToast();
+        }
+    }
+
+    function applyTypeFilter() {
+        resetVisibility();
+        network.fit({ animation: { duration: 450, easingFunction: 'easeInOutQuad' } });
+    }
+
+    // ==========================================
+    // 2. 交互逻辑：点击、面板与关系模式
+    // ==========================================
+    let currentSelectedNodeId = null;
+    let relationMode = false;
+    let relationTargetNodes = [];
+
+    network.on("selectNode", function(params) {
+        currentSelectedNodeId = params.nodes[0];
+        document.getElementById('editBtn').disabled = false;
+        document.getElementById('deleteBtn').disabled = false;
+    });
+
+    network.on("deselectNode", function() {
+        currentSelectedNodeId = null;
+        document.getElementById('editBtn').disabled = true;
+        document.getElementById('deleteBtn').disabled = true;
+        if(!relationMode) document.getElementById("detailPanel").innerHTML = `<h2>节点详情</h2><div class="panel-text">请点击右侧图谱中的节点，查看更多详细内容。</div>`;
+    });
+
+    function toggleRelationMode() {
+        relationMode = !relationMode;
+        relationTargetNodes = [];
+        const btn = document.getElementById('relationBtn');
+        if (relationMode) {
+            btn.classList.add('btn-active');
+            btn.innerHTML = `<i class="fas fa-times"></i> 取消建关系`;
+            document.getElementById("detailPanel").innerHTML = `
+                <div style="background:#eff6ff; padding:16px; border-radius:8px; border:1px solid #bfdbfe;">
+                    <h3 style="color:#1d4ed8; margin:0 0 8px;"><i class="fas fa-magic"></i> 关系编辑模式</h3>
+                    <p style="font-size:13px; color:#475569; margin:0; line-height:1.6;">请在右侧图谱中<b>依次点击两个节点</b>。<br>将为您建立连线或修改已有连线。</p>
+                </div>
+            `;
+        } else {
+            btn.classList.remove('btn-active');
+            btn.innerHTML = `<i class="fas fa-link"></i> 关系`;
+            if(currentSelectedNodeId) renderDetailPanel(currentSelectedNodeId);
+            else document.getElementById("detailPanel").innerHTML = `<h2>节点详情</h2><div class="panel-text">请点击右侧图谱中的节点，查看更多详细内容。</div>`;
+        }
+    }
+
+    network.on("click", (params) => {
+        if (params.nodes.length > 0) {
+            const clickedNode = params.nodes[0];
+            if (relationMode) {
+                if (relationTargetNodes.length === 1 && relationTargetNodes[0] === clickedNode) {
+                    alert("不能选择同一个节点作为终点，请重新选择！");
+                    return;
+                }
+
+                relationTargetNodes.push(clickedNode);
+                if (relationTargetNodes.length === 1) {
+                    document.getElementById("detailPanel").innerHTML = `
+                        <div style="background:#eff6ff; padding:16px; border-radius:8px; border:1px solid #bfdbfe;">
+                            <h3 style="color:#1d4ed8; margin:0 0 8px;">第一步：已选起点</h3>
+                            <p style="font-size:14px; font-weight:bold; color:#1e293b;">${escapeHtml(clickedNode)}</p>
+                            <p style="font-size:13px; color:#475569; margin-top:8px;">请继续点击另一个节点作为终点。</p>
+                        </div>
+                    `;
+                } else if (relationTargetNodes.length === 2) {
+                    openEdgeModal(relationTargetNodes[0], relationTargetNodes[1]);
+                    toggleRelationMode();
+                }
+                return;
+            }
+            focusNode(clickedNode);
+        }
+    });
+
+    function focusNode(nodeId, triggerCamera=true) {
+        network.selectNodes([nodeId]);
+        if (triggerCamera) network.focus(nodeId, {scale: 1.2, animation: true});
+        currentSelectedNodeId = nodeId;
+        document.getElementById('editBtn').disabled = false;
+        document.getElementById('deleteBtn').disabled = false;
+        renderDetailPanel(nodeId);
+    }
+
+    function renderDetailPanel(nodeId) {
+        const item = nodes.get(nodeId);
+        if (!item) return;
+
+        let h = `<h2 style="margin:0; font-size:18px; word-break:break-word;">${escapeHtml(item.id)}</h2>
+                 <div class="panel-block" style="margin-top:10px;">
+                    <div class="panel-title">实体类型</div>
+                    <div class="panel-text" style="color:${item.color?.border || item.color}; font-weight:bold;">${escapeHtml(item.group)}</div>
+                 </div>`;
+
+        if (item.description) {
+            h += `<div class="panel-block">
+                    <div class="panel-title">详细说明</div>
+                    <div class="panel-text" style="font-size: 13px; line-height: 1.6; max-height: 250px; overflow-y: auto; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        ${escapeHtml(item.description).replace(/\n/g, '<br>')}
+                    </div>
+                  </div>`;
+        }
+
+        if (item.associatedImages && item.associatedImages.length > 0) {
+            item.associatedImages.forEach((imgNode, idx) => {
+                h += `<div class="panel-block">
+                        <div class="panel-title">\u5173\u8054\u56fe\u7247 ${idx + 1}\uff1a${escapeHtml(imgNode.label || imgNode.id || '\u672a\u547d\u540d\u56fe\u7247')}</div>
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px; margin-top: 8px;">
+                            <img src="${escapeHtml(imgNode.media_url || ('/api/media/' + encodeURIComponent(imgNode.id)))}" alt="${escapeHtml(imgNode.label || imgNode.id)}" style="width: 100%; max-height: 280px; object-fit: contain; border-radius: 4px; display: block;" onerror="this.style.display='none'">
+                        </div>`;
+                if (imgNode.description) {
+                    h += `<div class="panel-text" style="font-size: 12px; line-height: 1.6; max-height: 200px; overflow-y: auto; padding: 8px; background: #fff; border-radius: 6px; border: 1px dashed #cbd5e1; margin-top: 8px;">
+                            <span style="color:#64748b; font-weight:bold;"><i class="fas fa-file-alt"></i> 内容解析：</span><br>
+                            ${escapeHtml(imgNode.description).replace(/\n/g, '<br>')}
+                          </div>`;
+                }
+                h += `</div>`;
+            });
+        }
+
+        const relatedEdges = edges.get().filter(e => e.from === nodeId || e.to === nodeId);
+        if(relatedEdges.length > 0) {
+             const displayLimit = 50;
+             h += `<div class="panel-block"><div class="panel-title">关联网 (共 ${relatedEdges.length} 个)</div>`;
+             relatedEdges.slice(0, displayLimit).forEach(e => {
+                 const neighborId = e.from === nodeId ? e.to : e.from;
+                 h += `<div style="padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: #fff;">
+                        <div style="color: #1d4ed8; cursor:pointer; font-weight:600; font-size:14px; margin-bottom: 4px;" onclick="resetVisibility(); focusNode('${escapeHtml(neighborId)}')">
+                            <i class="fas fa-link" style="color: #64748b;"></i> ${escapeHtml(neighborId)}
+                        </div>
+                        <div style="font-size:12px; color:#92400e; background:#fef3c7; display:inline-block; padding:2px 8px; border-radius:4px; border: 1px solid #fde68a;">
+                            \u5173\u7cfb: ${escapeHtml(e.relation || e.description || '\u76f8\u5173')}
+                        </div>
+                        ${e.evidence ? `<div style="font-size:12px; color:#64748b; line-height:1.55; margin-top:7px;">\u8bc1\u636e\uff1a${escapeHtml(e.evidence)}</div>` : ''}
+                       </div>`;
+             });
+             if(relatedEdges.length > displayLimit) h += `<div style="font-size:12px; color:#6b7280; text-align:center;">（仅显示前 ${displayLimit} 个）</div>`;
+             h += `</div>`;
+        }
+        document.getElementById("detailPanel").innerHTML = h;
+    }
+
+    // ==========================================
+    // 🌟 3. 原生 DataSet 隐藏与搜索逻辑 (包含清除功能)
+    // ==========================================
+    const searchInput = document.getElementById("searchInput");
+    const searchDropdown = document.getElementById("searchDropdown");
+    const clearSearchBtn = document.getElementById("clearSearchBtn");
+    let currentSearchMatches = [];
+
+    function resetVisibility() {
+        const selectedType = document.getElementById('typeFilter').value;
+        const visibleIds = new Set();
+        const nodesToUpdate = nodes.get().map(node => {
+            const visible = !selectedType || node.group === selectedType;
+            if (visible) visibleIds.add(node.id);
+            return { id: node.id, hidden: !visible, color: getNodeColorByType(node.group) };
+        });
+        nodes.update(nodesToUpdate);
+        edges.update(edges.get().map(edge => {
+            const visible = visibleIds.has(edge.from) && visibleIds.has(edge.to);
+            return {
+                id: edge.id,
+                hidden: !visible
+            };
+        }));
+        document.getElementById('showAllBtn').style.display = selectedType ? 'inline-block' : 'none';
+        wakePhysics('settling');
+    }
+
+    function showOneHopSubgraph(centerNodeId) {
+        document.getElementById('typeFilter').value = '';
+        const relatedEdges = edges.get().filter(e => e.from === centerNodeId || e.to === centerNodeId);
+        const activeNodeIds = new Set([centerNodeId]);
+        relatedEdges.forEach(e => { activeNodeIds.add(e.from); activeNodeIds.add(e.to); });
+
+        const nodesToUpdate = nodes.get().map(n => ({
+            id: n.id,
+            hidden: !activeNodeIds.has(n.id),
+            color: getNodeColorByType(n.group)
+        }));
+        nodes.update(nodesToUpdate);
+
+        const edgesToUpdate = edges.get().map(e => {
+            const visible = activeNodeIds.has(e.from) && activeNodeIds.has(e.to);
+            return { id: e.id, hidden: !visible };
+        });
+        edges.update(edgesToUpdate);
+
+        document.getElementById('showAllBtn').style.display = 'inline-block';
+        wakePhysics('settling');
+        focusNode(centerNodeId, true);
+    }
+
+    function showFullGraph() {
+        document.getElementById('typeFilter').value = '';
+        resetVisibility();
+        network.moveTo({ scale: 0.5, animation: { duration: 800, easingFunction: "easeInOutQuad" } });
+    }
+
+    searchInput.addEventListener("input", (e) => {
+        const val = e.target.value;
+        const kw = val.trim().toLowerCase();
+
+        clearSearchBtn.style.display = val.length > 0 ? 'block' : 'none';
+
+        if (!kw) { searchDropdown.style.display = 'none'; return; }
+
+        currentSearchMatches = nodes.get().filter(n => String(n.label || n.id).toLowerCase().includes(kw));
+
+        if (currentSearchMatches.length > 0) {
+            searchDropdown.innerHTML = currentSearchMatches.slice(0, 20).map((n) =>
+                `<li data-id="${escapeHtml(n.id)}">
+                    <b>${escapeHtml(n.label || n.id)}</b>
+                    <span style="color:#9ca3af;font-size:12px;margin-left:6px;">(${escapeHtml(n.group)})</span>
+                 </li>`
+            ).join('');
+            searchDropdown.style.display = 'block';
+        } else {
+            searchDropdown.innerHTML = '<li style="color:#9ca3af;text-align:center;">无匹配节点</li>';
+            searchDropdown.style.display = 'block';
+        }
+    });
+
+    searchDropdown.addEventListener("click", (e) => {
+        const li = e.target.closest('li');
+        if (li && li.dataset.id) {
+            const nodeId = li.dataset.id;
+            const node = nodes.get(nodeId);
+            searchInput.value = node.label || node.id;
+            searchDropdown.style.display = 'none';
+            showOneHopSubgraph(nodeId);
+        }
+    });
+
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (currentSearchMatches.length > 0) {
+            const firstMatch = currentSearchMatches[0];
+            searchInput.value = firstMatch.label || firstMatch.id;
+            searchDropdown.style.display = 'none';
+            showOneHopSubgraph(firstMatch.id);
+        } else if (searchInput.value.trim() === '') {
+            showFullGraph();
+            searchDropdown.style.display = 'none';
+        } else {
+            alert("未找到节点");
+        }
+      }
+    });
+
+    clearSearchBtn.addEventListener("click", () => {
+        searchInput.value = '';
+        clearSearchBtn.style.display = 'none';
+        searchDropdown.style.display = 'none';
+    });
+
+    document.addEventListener("click", (e) => {
+        if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
+            searchDropdown.style.display = 'none';
+        }
+    });
+
+    // ==========================================
+    // 🌟 4. 高级 CRUD：带图片上传与服务端物理删除
+    // ==========================================
+    let currentEditImages = [];
+    let imagesToDeleteFromServer = [];
+
+    function syncImageDescriptions() {
+        currentEditImages.forEach((img, idx) => {
+            const ta = document.getElementById(`editImgDesc_${idx}`);
+            if (ta) { img.description = ta.value; }
+        });
+    }
+
+    function closeModals() {
+        document.getElementById('nodeModal').style.display = 'none';
+        document.getElementById('edgeModal').style.display = 'none';
+        currentEditImages = [];
+        imagesToDeleteFromServer = [];
+    }
+
+    function openNodeModal(isEdit = false) {
+        currentEditImages = [];
+        imagesToDeleteFromServer = [];
+        const title = document.getElementById('nodeModalTitle');
+
+        if (isEdit && currentSelectedNodeId) {
+            const node = nodes.get(currentSelectedNodeId);
+            title.innerText = "编辑节点";
+            document.getElementById('nodeOriginalId').value = node.id;
+            document.getElementById('nodeLabelInput').value = node.id;
+            document.getElementById('nodeTypeInput').value = node.group || '';
+            document.getElementById('nodeDescInput').value = node.description || '';
+
+            if (node.associatedImages) {
+                currentEditImages = JSON.parse(JSON.stringify(node.associatedImages));
+            }
+        } else {
+            title.innerText = "新增节点";
+            document.getElementById('nodeOriginalId').value = "";
+            document.getElementById('nodeLabelInput').value = "";
+            document.getElementById('nodeTypeInput').value = "";
+            document.getElementById('nodeDescInput').value = "";
+        }
+
+        renderEditImagesList();
+        document.getElementById('nodeModal').style.display = 'flex';
+    }
+
+    function renderEditImagesList() {
+        const container = document.getElementById('editImagesContainer');
+        if (currentEditImages.length === 0) {
+            container.innerHTML = '<div style="font-size:13px; color:#9ca3af; text-align:center; padding:10px;">暂无关联图片</div>';
+            return;
+        }
+
+        container.innerHTML = currentEditImages.map((img, idx) => `
+            <div class="edit-img-card">
+                <button type="button" class="edit-img-remove" onclick="removeEditImage(${idx})" title="删除此图片"><i class="fas fa-times"></i></button>
+                <img src="${img.isNew ? img.previewBase64 : escapeHtml(img.media_url || ('/api/media/' + encodeURIComponent(img.id)))}" />
+                <textarea id="editImgDesc_${idx}" placeholder="输入该图片的识别描述或说明...">${escapeHtml(img.description || '')}</textarea>
+            </div>
+        `).join('');
+    }
+
+    function handleNewImageSelected(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        syncImageDescriptions();
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            currentEditImages.push({
+                isNew: true,
+                file: file,
+                previewBase64: e.target.result,
+                description: "",
+                group: "ORI_IMG"
+            });
+            renderEditImagesList();
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    }
+
+    function removeEditImage(idx) {
+        syncImageDescriptions();
+        const img = currentEditImages[idx];
+        if (!img.isNew && img.source_id) {
+            imagesToDeleteFromServer.push(img.source_id);
+        }
+        currentEditImages.splice(idx, 1);
+        renderEditImagesList();
+    }
+
+    async function saveNodeData() {
+        const originalId = document.getElementById('nodeOriginalId').value;
+        const newId = document.getElementById('nodeLabelInput').value.trim();
+        const typeStr = document.getElementById('nodeTypeInput').value.trim() || '\u77e5\u8bc6\u6982\u5ff5';
+        const desc = document.getElementById('nodeDescInput').value.trim();
+        if (!newId) { alert('\u8282\u70b9\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a'); return; }
+        if (originalId !== newId && nodes.get(newId)) { alert('\u8be5\u8282\u70b9\u540d\u79f0\u5df2\u5b58\u5728'); return; }
+
+        const saveBtn = document.getElementById('saveNodeBtn');
+        saveBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> \u5904\u7406\u4e2d...`;
+        saveBtn.disabled = true;
+        try {
+            syncImageDescriptions();
+            for (let i = 0; i < currentEditImages.length; i++) {
+                const img = currentEditImages[i];
+                if (img.isNew && img.file) {
+                    const formData = new FormData();
+                    formData.append('file', img.file);
+                    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                    if (!res.ok) throw new Error('\u56fe\u7247\u4e0a\u4f20\u5931\u8d25');
+                    const data = await res.json();
+                    img.id = img.id || `\u56fe\uff1a${newId}\u5173\u8054\u56fe${i + 1}-${Date.now()}`;
+                    img.label = img.id;
+                    img.source_id = data.url;
+                    img.media_url = data.url;
+                    img.group = '\u56fe\u7247';
+                    img.raw_entity_type = 'ORI_IMG';
+                    img.is_image = true;
+                    img.isNew = false;
+                    delete img.file;
+                    delete img.previewBase64;
+                }
+            }
+
+            let spawnX = 0, spawnY = 0;
+            if (originalId && nodes.get(originalId)) {
+                const oldPos = network.getPositions([originalId])[originalId];
+                if (oldPos) { spawnX = oldPos.x; spawnY = oldPos.y; }
+            } else {
+                const domCenter = { x: network.canvas.frame.canvas.clientWidth / 2, y: network.canvas.frame.canvas.clientHeight / 2 };
+                const canvasCenter = network.DOMtoCanvas(domCenter);
+                spawnX = canvasCenter.x + (Math.random() * 20 - 10);
+                spawnY = canvasCenter.y + (Math.random() * 20 - 10);
+            }
+
+            const isImage = typeStr === '\u56fe\u7247' || typeStr === 'ORI_IMG' || typeStr === 'IMG';
+            const imageRefs = currentEditImages.filter(img => img.id && img.id !== newId);
+            const newNodeData = {
+                id: newId, label: newId, group: isImage ? '\u56fe\u7247' : typeStr,
+                raw_entity_type: isImage ? 'ORI_IMG' : typeStr, is_image: isImage,
+                description: desc, source_id: originalId && nodes.get(originalId) ? (nodes.get(originalId).source_id || '') : '',
+                shape: 'dot', color: getNodeColorByType(isImage ? '\u56fe\u7247' : typeStr),
+                value: 20, font: {size: 14}, hidden: false, associatedImages: imageRefs,
+                x: spawnX, y: spawnY
+            };
+
+            if (originalId && nodes.get(originalId)) {
+                if (originalId !== newId) {
+                    const relatedEdges = edges.get().filter(e => e.from === originalId || e.to === originalId);
+                    const updatedEdges = relatedEdges.map(e => ({...e, from: e.from === originalId ? newId : e.from, to: e.to === originalId ? newId : e.to}));
+                    nodes.remove(originalId);
+                    nodes.add(newNodeData);
+                    edges.update(updatedEdges);
+                } else {
+                    nodes.update(newNodeData);
+                }
+            } else {
+                nodes.add(newNodeData);
+            }
+
+            const isImageNode = id => {
+                const n = nodes.get(id);
+                return Boolean(n && (n.is_image || n.raw_entity_type === 'ORI_IMG' || n.group === '\u56fe\u7247'));
+            };
+            const oldImageEdgeIds = edges.get().filter(e => {
+                if (e.from !== newId && e.to !== newId) return false;
+                const other = e.from === newId ? e.to : e.from;
+                return isImageNode(other);
+            }).map(e => e.id);
+            edges.remove(oldImageEdgeIds);
+
+            imageRefs.forEach((img, idx) => {
+                if (!nodes.get(img.id)) {
+                    nodes.add({
+                        id: img.id, label: img.label || img.id, group: '\u56fe\u7247', raw_entity_type: 'ORI_IMG', is_image: true,
+                        description: img.description || '', source_id: img.source_id || '', media_url: img.media_url || '',
+                        associatedImages: [img], shape: 'dot', color: getNodeColorByType('\u56fe\u7247'), value: 24, font: {size: 14}
+                    });
+                }
+                edges.add({
+                    id: `manual-image-${Date.now()}-${idx}`, from: img.id, to: newId, arrows: 'to',
+                    relation: '\u5c55\u793a', label: '\u5c55\u793a', description: '\u5c55\u793a',
+                    evidence: img.description || `\u8be5\u56fe\u7247\u4e0e${newId}\u76f8\u5173`, weight: 1, hidden: false
+                });
+            });
+
+            closeModals();
+            resetVisibility();
+            setTimeout(() => { focusNode(newId, true); }, 50);
+            await saveGraphToServer();
+        } catch (err) {
+            alert(`\u4fdd\u5b58\u5931\u8d25: ${err.message}`);
+        } finally {
+            saveBtn.innerHTML = '\u786e\u5b9a\u4fdd\u5b58';
+            saveBtn.disabled = false;
+        }
+    }
+    async function deleteSelectedNode() {
+        if (!currentSelectedNodeId) return;
+        const nodeId = currentSelectedNodeId;
+        const node = nodes.get(nodeId);
+        if (!confirm(`\u786e\u8ba4\u5220\u9664\u8282\u70b9\u201c${nodeId}\u201d\u53ca\u5176\u76f8\u5173\u8fde\u7ebf\u5417\uff1f`)) return;
+        try {
+            const relatedEdges = edges.get().filter(e => e.from === nodeId || e.to === nodeId);
+            const removableImages = (node.associatedImages || []).filter(img => {
+                if (!img.id || img.id === nodeId || !nodes.get(img.id)) return false;
+                return !edges.get().some(e => (e.from === img.id || e.to === img.id) && e.from !== nodeId && e.to !== nodeId);
+            });
+
+            edges.remove(relatedEdges.map(e => e.id));
+            nodes.remove(nodeId);
+            removableImages.forEach(img => nodes.remove(img.id));
+
+            // --- 修复卡顿与外观丢失的核心部分 开始 ---
+            const nodesToUpdate = [];
+            nodes.get().forEach(n => {
+                if (n.associatedImages) {
+                    nodesToUpdate.push({
+                        id: n.id,
+                        associatedImages: n.associatedImages.filter(img => img.id !== nodeId && !removableImages.some(x => x.id === img.id)),
+                        color: n.color || getNodeColorByType(n.group) // 👈 解决外观退回默认颜色的问题
+                    });
+                }
+            });
+
+            if (nodesToUpdate.length > 0) {
+                nodes.update(nodesToUpdate); // 👈 批量一次性更新，彻底解决卡顿等待问题
+            }
+            // --- 修复卡顿与外观丢失的核心部分 结束 ---
+
+            const deleteUpload = async img => {
+                const url = img.source_id || img.media_url || '';
+                const match = url.match(/^\/api\/uploads\/([^/?#]+)$/);
+                if (match) await fetch(`/api/uploads/${encodeURIComponent(match[1])}`, {method: 'DELETE'});
+            };
+            if (node.is_image) await deleteUpload(node);
+            for (const img of removableImages) await deleteUpload(img);
+
+            network.unselectAll();
+            currentSelectedNodeId = null;
+            document.getElementById('editBtn').disabled = true;
+            document.getElementById('deleteBtn').disabled = true;
+            document.getElementById('detailPanel').innerHTML = `<h2>\u8282\u70b9\u8be6\u60c5</h2><div class="panel-text">\u8282\u70b9\u5df2\u5220\u9664\u3002</div>`;
+
+            await saveGraphToServer();
+        } catch (err) {
+            alert(`\u5220\u9664\u5931\u8d25\uff1a${err.message}`);
+        }
+    }
+    function openEdgeModal(sourceId, targetId) {
+        document.getElementById('edgeSourceText').innerText = sourceId;
+        document.getElementById('edgeTargetText').innerText = targetId;
+        document.getElementById('edgeSourceId').value = sourceId;
+        document.getElementById('edgeTargetId').value = targetId;
+
+        const existingEdge = edges.get().find(e => (e.from === sourceId && e.to === targetId) || (e.from === targetId && e.to === sourceId));
+        if (existingEdge) {
+            document.getElementById('edgeModalTitle').innerText = "修改节点关系";
+            document.getElementById('edgeExistingId').value = existingEdge.id;
+            document.getElementById('edgeDescInput').value = existingEdge.relation || existingEdge.label || existingEdge.description || '';
+            document.getElementById('edgeEvidenceInput').value = existingEdge.evidence || '';
+            document.getElementById('edgeDeleteBtn').style.display = 'inline-block';
+        } else {
+            document.getElementById('edgeModalTitle').innerText = "建立新关系";
+            document.getElementById('edgeExistingId').value = "";
+            document.getElementById('edgeDescInput').value = "";
+            document.getElementById('edgeEvidenceInput').value = "";
+            document.getElementById('edgeDeleteBtn').style.display = 'none';
+        }
+        document.getElementById('edgeModal').style.display = 'flex';
+    }
+
+    function saveEdgeData() {
+        const sourceId = document.getElementById('edgeSourceId').value;
+        const targetId = document.getElementById('edgeTargetId').value;
+        const existingId = document.getElementById('edgeExistingId').value;
+        const relation = document.getElementById('edgeDescInput').value.trim() || '\u76f8\u5173';
+        const evidence = document.getElementById('edgeEvidenceInput').value.trim();
+        if ([...relation].length > 4) { alert('\u5173\u7cfb\u8bcd\u8bf7\u63a7\u5236\u57284\u4e2a\u6c49\u5b57\u4ee5\u5185'); return; }
+        const edgeData = {
+            from: sourceId, to: targetId, relation, label: relation, description: relation,
+            evidence, title: evidence || relation, weight: 1, arrows: 'to', hidden: false
+        };
+        if (existingId) { edgeData.id = existingId; edges.update(edgeData); } else { edges.add(edgeData); }
+        closeModals(); resetVisibility(); focusNode(sourceId, false); saveGraphToServer();
+    }
+    function deleteEdgeData() {
+        const existingId = document.getElementById('edgeExistingId').value;
+        if (existingId && confirm("确认删除关系连线吗？")) {
+            edges.remove(existingId);
+            closeModals();
+            saveGraphToServer();
+        }
+    }
+
+    // --- 序列化代码 ---
+    function escapeXmlAttr(unsafe) {
+        if (!unsafe) return '"&quot;&quot;"';
+        let safe = String(unsafe).replace(/[<>&'"]/g, c => ({'<':'&lt;', '>':'&gt;', '&':'&amp;', '\'':'&apos;', '"':'&quot;'}[c]));
+        return `"&quot;${safe}&quot;"`;
+    }
+    function escapeXmlText(unsafe) {
+        if (!unsafe) return '""';
+        let safe = String(unsafe).replace(/[<>&]/g, c => ({'<':'&lt;', '>':'&gt;', '&':'&amp;'}[c]));
+        return `"${safe}"`;
+    }
+
+    async function saveGraphToServer() {
+        let xml = `<?xml version='1.0' encoding='utf-8'?>\n`;
+        xml += `<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n`;
+        xml += `  <key id="d0" for="node" attr.name="entity_type" attr.type="string"/>\n`;
+        xml += `  <key id="d1" for="node" attr.name="description" attr.type="string"/>\n`;
+        xml += `  <key id="d2" for="node" attr.name="source_id" attr.type="string"/>\n`;
+        xml += `  <key id="d3" for="edge" attr.name="weight" attr.type="double"/>\n`;
+        xml += `  <key id="d4" for="edge" attr.name="relation" attr.type="string"/>\n`;
+        xml += `  <key id="d5" for="edge" attr.name="description" attr.type="string"/>\n`;
+        xml += `  <key id="d6" for="edge" attr.name="evidence" attr.type="string"/>\n`;
+        xml += `  <key id="d7" for="edge" attr.name="source_id" attr.type="string"/>\n`;
+        xml += `  <key id="d8" for="edge" attr.name="order" attr.type="long"/>\n`;
+        xml += `  <graph edgedefault="undirected">\n`;
+        nodes.get().forEach(n => {
+            const rawType = n.raw_entity_type || (n.is_image || n.group === '\u56fe\u7247' ? 'ORI_IMG' : (n.group || '\u77e5\u8bc6\u6982\u5ff5'));
+            xml += `    <node id=${escapeXmlAttr(n.id)}>\n`;
+            xml += `      <data key="d0">${escapeXmlText(rawType)}</data>\n`;
+            if (n.description) xml += `      <data key="d1">${escapeXmlText(n.description)}</data>\n`;
+            if (n.source_id) xml += `      <data key="d2">${escapeXmlText(n.source_id)}</data>\n`;
+            xml += `    </node>\n`;
+        });
+        edges.get().forEach((e, idx) => {
+            const relation = e.relation || e.label || e.description || '\u76f8\u5173';
+            const description = e.description || relation;
+            xml += `    <edge source=${escapeXmlAttr(e.from)} target=${escapeXmlAttr(e.to)}>\n`;
+            xml += `      <data key="d3">${Number(e.weight || 1)}</data>\n`;
+            xml += `      <data key="d4">${escapeXmlText(relation)}</data>\n`;
+            xml += `      <data key="d5">${escapeXmlText(description)}</data>\n`;
+            if (e.evidence) xml += `      <data key="d6">${escapeXmlText(e.evidence)}</data>\n`;
+            if (e.source_id) xml += `      <data key="d7">${escapeXmlText(e.source_id)}</data>\n`;
+            xml += `      <data key="d8">${idx}</data>\n`;
+            xml += `    </edge>\n`;
+        });
+        xml += `  </graph>\n</graphml>`;
+        const res = await fetch('/api/save_graphml', {
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({graphml: xml})
+        });
+        if (!res.ok) {
+            let message = '\u670d\u52a1\u5668\u62d2\u7edd\u5199\u5165';
+            try { message = (await res.json()).detail || message; } catch (_) {}
+            throw new Error(message);
+        }
+        const statusLabel = document.getElementById('saveStatus');
+        statusLabel.style.display = 'inline-block';
+        setTimeout(() => { statusLabel.style.display = 'none'; }, 3000);
+    }
+    // ==========================================
+    // 5. AI 助手功能交互逻辑
+    // ==========================================
+    const aiSidebar = document.getElementById('aiSidebar');
+    const chatHistory = document.getElementById('aiChatHistory');
+    const inputMsg = document.getElementById('aiInputMessage');
+    const aiAttachments = [];
+    let isPanelOpen = false;
+
+    const pdfJsBase = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/';
+
+    async function extractPdfText(file) {
+        const pdfjs = await import(pdfJsBase + 'pdf.min.mjs');
+        pdfjs.GlobalWorkerOptions.workerSrc = pdfJsBase + 'pdf.worker.min.mjs';
+        const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false }).promise;
+        try {
+            const pageTexts = [];
+            const pageLimit = Math.min(pdf.numPages, 8);
+            for (let pageNo = 1; pageNo <= pageLimit; pageNo++) {
+                const page = await pdf.getPage(pageNo);
+                const content = await page.getTextContent();
+                pageTexts.push(content.items.map(item => item.str).join(' '));
+            }
+            return pageTexts.join('\n').slice(0, 24000);
+        } finally {
+            await pdf.destroy();
+        }
+    }
+
+    function toggleAiPanel() {
+        isPanelOpen = !isPanelOpen;
+        const toggleBtn = document.getElementById('aiToggleBtn');
+        if(isPanelOpen) {
+            aiSidebar.classList.add('open');
+            toggleBtn.classList.add('shift');
+            inputMsg.focus();
+        }
+        else {
+            aiSidebar.classList.remove('open');
+            toggleBtn.classList.remove('shift');
+        }
+    }
+
+    function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+
+    // 点击「图谱命中」中的实体 → 在图谱中聚焦其一跳子图
+    function focusNodeFromChat(nodeId) {
+        const resourcePage = document.getElementById('resourcePage');
+        if (resourcePage && resourcePage.style.display !== 'none') showGraphPage();
+        if (!nodes.get(nodeId)) { alert('该实体已不在当前图谱中'); return; }
+        resetVisibility();
+        showOneHopSubgraph(nodeId);
+    }
+
+    // 实体与候选图片统一使用事件委托，点击或键盘操作都能定位节点。
+    function activateChatFocusChip(target) {
+        const chip = target.closest('.chat-focus-chip');
+        if (chip && chip.dataset.id) focusNodeFromChat(chip.dataset.id);
+    }
+    chatHistory.addEventListener('click', (e) => activateChatFocusChip(e.target));
+    chatHistory.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const chip = e.target.closest('.chat-focus-chip');
+        if (!chip) return;
+        e.preventDefault();
+        activateChatFocusChip(chip);
+    });
+
+    function renderRetrievalBubble(ev) {
+        if (!ev.found) {
+            return appendBubble(`<i class="fas fa-info-circle"></i> 本次未在知识图谱中命中相关实体，将基于通用知识作答。`, 'local-graph', true);
+        }
+        const imageCandidates = [...new Map(
+            (Array.isArray(ev.images) ? ev.images : [])
+                .filter(img => img && (img.id || img.name))
+                .map(img => [img.id || img.name, img])
+        ).values()];
+        const imageIds = new Set(imageCandidates.map(img => img.id || img.name));
+        const entities = (Array.isArray(ev.entities) ? ev.entities : []).filter(en =>
+            en && en.type !== '\u56fe\u7247' && !imageIds.has(en.name)
+        );
+        let html = `<i class="fas fa-sitemap"></i> <b>图谱命中 ${entities.length} 个实体</b>`;
+        if (imageCandidates.length) {
+            html += ` · <i class="fas fa-image"></i> <b>${imageCandidates.length}</b> 张候选关联图像`;
+        } else if (ev.visual_requested) {
+            html += ` · <i class="fas fa-image"></i> 图谱候选图像 0 张`;
+        }
+        if (ev.visual_requested) {
+            const initialStatus = ev.visual_available ? '等待视觉分析' : '当前未启用视觉模型，仅使用图文说明';
+            html += ` <span class="retrieval-vision-status" style="color:#64748b;">（${initialStatus}）</span>`;
+        }
+
+        html += `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">`;
+        entities.forEach(en => {
+            const pct = (en.score != null) ? `${(Math.max(0, Math.min(1, Number(en.score))) * 100).toFixed(0)}%` : '';
+            html += `<span class="chat-focus-chip chat-entity-chip" data-id="${escapeHtml(en.name)}" role="button" tabindex="0"
+                        title="点击定位节点｜类型: ${escapeHtml(en.type || '')}｜相似度: ${pct}"
+                        style="cursor:pointer; background:#fff; border:1px solid #fde68a; color:#92400e;
+                               padding:3px 8px; border-radius:12px; font-size:12px;">
+                        <i class="fas fa-crosshairs" style="font-size:10px;"></i> ${escapeHtml(en.name)}
+                        <span style="color:#b45309;">${pct}</span>
+                     </span>`;
+        });
+        html += `</div>`;
+
+        if (imageCandidates.length) {
+            html += `<div style="margin-top:7px; display:flex; flex-wrap:wrap; gap:5px;">`;
+            imageCandidates.forEach(img => {
+                const pct = img.score != null ? `${(Math.max(0, Math.min(1, Number(img.score))) * 100).toFixed(0)}%` : '';
+                const via = img.matched_via ? `｜关联实体：${escapeHtml(img.matched_via)}` : '';
+                const imageId = img.id || img.name;
+                html += `<span class="chat-focus-chip chat-image-chip" data-id="${escapeHtml(imageId)}" role="button" tabindex="0"
+                              title="点击定位图片节点｜候选相关度：${pct}${via}"
+                              style="cursor:pointer; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+                                     background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af;
+                                     padding:3px 7px; border-radius:11px; font-size:11px;">
+                            <i class="fas fa-image"></i> ${escapeHtml(img.name)} ${pct}
+                         </span>`;
+            });
+            html += `</div>`;
+        }
+        return appendBubble(html, 'local-graph', true);
+    }
+
+    function updateVisualAnalysisBubble(bubble, ev) {
+        if (!bubble) return;
+        const status = bubble.querySelector('.retrieval-vision-status');
+        if (!status) return;
+        if (ev.success) {
+            status.textContent = `（实际视觉分析 ${ev.analyzed_image_count || 0} 张：用户 ${ev.user_image_count || 0} 张，图谱 ${ev.graph_image_count || 0} 张）`;
+            status.style.color = '#047857';
+        } else {
+            status.textContent = `（${ev.message || '未执行视觉分析，已使用图谱文本证据'}）`;
+            status.style.color = '#b45309';
+        }
+    }
+    function appendStatusBubble(label) {
+        const div = document.createElement('div');
+        div.className = 'chat-status';
+        div.innerHTML = `<span class="spinner"></span><span class="status-label">${escapeHtml(label)}</span>`;
+        chatHistory.appendChild(div);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+        return div;
+    }
+
+    function renderMarkdown(text) {
+        const cleaned = String(text || '').replace(/\[(?:(?:\u8bfe\u4ef6)?\u539f\u6587|\u5b9e\u4f53|\u56fe\u50cf|\u56fe\u7247)[^\]]*\]/g, '');
+        if (window.marked && window.DOMPurify) {
+            return window.DOMPurify.sanitize(window.marked.parse(cleaned), {
+                USE_PROFILES: { html: true },
+                FORBID_TAGS: ['img', 'style']
+            });
+        }
+        return escapeHtml(cleaned).replace(/\n/g, '<br>');
+    }
+
+    async function sendMessage() {
+        const text = inputMsg.value.trim();
+        if (!text && aiAttachments.length === 0) return;
+
+        // 1. 渲染用户气泡
+        let userDisplayHtml = `<div style="margin-bottom: 6px;">${escapeHtml(text)}</div>`;
+        if (aiAttachments.length > 0) {
+            userDisplayHtml += '<div class="chat-user-media-container">';
+            aiAttachments.forEach(att => {
+                if (att.kind === 'image') {
+                    userDisplayHtml += `<img src="${att.previewSrc}" class="chat-user-media-img" title="上传的图片">`;
+                } else {
+                    userDisplayHtml += `<div class="chat-user-media-pdf"><i class="fas fa-file-pdf"></i> ${escapeHtml(att.name)}</div>`;
+                }
+            });
+            userDisplayHtml += '</div>';
+        }
+        appendBubble(userDisplayHtml, 'user', true);
+        inputMsg.value = '';
+
+        // 2. 收集附件（图谱检索已由后端语义检索接管）
+        const imageBase64List = [];
+        let attachmentTexts = [];
+        aiAttachments.forEach(att => {
+            if (att.kind === 'image') { imageBase64List.push(att.previewSrc); }
+            else if (att.kind === 'pdf') { attachmentTexts.push(`文档内容: ${att.extractedText}`); }
+        });
+        aiAttachments.length = 0;
+        renderAttList();
+
+        // 3. SSE 流式问答
+        let statusBubble = appendStatusBubble('正在连接知识图谱…');
+        let aiBubble = null;
+        let retrievalBubble = null;
+        let answerText = '';
+
+        const ensureAiBubble = () => {
+            if (statusBubble) { statusBubble.remove(); statusBubble = null; }
+            if (!aiBubble) {
+                aiBubble = document.createElement('div');
+                aiBubble.className = 'chat-bubble chat-ai';
+                chatHistory.appendChild(aiBubble);
+            }
+            return aiBubble;
+        };
+
+        const handleEvent = (ev) => {
+            switch (ev.event) {
+                case 'status':
+                    if (statusBubble) {
+                        const lbl = statusBubble.querySelector('.status-label');
+                        if (lbl) lbl.textContent = ev.label || '处理中…';
+                    }
+                    break;
+                case 'retrieval':
+                    retrievalBubble = renderRetrievalBubble(ev);
+                    break;
+                case 'visual_analysis':
+                    updateVisualAnalysisBubble(retrievalBubble, ev);
+                    break;
+                case 'token':
+                    ensureAiBubble();
+                    answerText += ev.text;
+                    aiBubble.innerHTML = renderMarkdown(answerText);
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                    break;
+                case 'done':
+                    ensureAiBubble();
+                    aiBubble.innerHTML = renderMarkdown(ev.answer || answerText);
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                    break;
+                case 'error':
+                    if (statusBubble) { statusBubble.remove(); statusBubble = null; }
+                    appendBubble(`⚠️ <b>出错了：</b><br>${escapeHtml(ev.message || '未知错误')}`, 'ai', true);
+                    break;
+            }
+        };
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: text, image_base64_list: imageBase64List, attachment_texts: attachmentTexts })
+            });
+            if (!response.ok || !response.body) throw new Error(await response.text());
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let buffer = '';
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                let sepIdx;
+                while ((sepIdx = buffer.indexOf('\n\n')) >= 0) {
+                    const rawEvent = buffer.slice(0, sepIdx);
+                    buffer = buffer.slice(sepIdx + 2);
+                    const dataLine = rawEvent.split('\n').find(l => l.startsWith('data:'));
+                    if (!dataLine) continue;
+                    const payload = dataLine.slice(5).trim();
+                    if (!payload) continue;
+                    try { handleEvent(JSON.parse(payload)); } catch (_) { /* 忽略半包 */ }
+                }
+            }
+        } catch (error) {
+            if (statusBubble) { statusBubble.remove(); statusBubble = null; }
+            appendBubble(`⚠️ <b>请求失败：</b><br>${escapeHtml(error.message)}`, 'ai', true);
+        }
+    }
+
+    function appendBubble(content, sender, isHtml = false) {
+        const div = document.createElement('div');
+        div.className = `chat-bubble chat-${sender}`;
+        if (isHtml) div.innerHTML = content; else div.innerText = content;
+        chatHistory.appendChild(div);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+        return div;
+    }
+
+    document.getElementById('aiFileInput').addEventListener('change', async (e) => {
+        for (const file of Array.from(e.target.files)) {
+            if (aiAttachments.length >= 4) break;
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = () => { aiAttachments.push({ kind: 'image', name: file.name, previewSrc: reader.result }); renderAttList(); };
+                reader.readAsDataURL(file);
+            } else if (file.type === 'application/pdf') {
+                try {
+                    const extractedText = await extractPdfText(file);
+                    aiAttachments.push({ kind: 'pdf', name: file.name, extractedText });
+                    renderAttList();
+                } catch {
+                    appendBubble('无法读取 PDF。请确认文件可以打开，并检查浏览器能否访问 jsDelivr。', 'ai');
+                }
+            }
+        }
+        e.target.value = '';
+    });
+
+    function renderAttList() {
+        const list = document.getElementById('aiAttachmentList');
+        if (!aiAttachments.length) {
+            list.style.display = 'none';
+            list.innerHTML = '';
+            return;
+        }
+        list.style.display = 'flex';
+        list.innerHTML = aiAttachments.map((att, idx) => `
+          <div class="ai-attachment-item" title="${escapeHtml(att.name)}">
+            ${att.kind === 'image' ? `<img class="ai-attachment-preview" src="${escapeHtml(att.previewSrc)}">` : `<i class="fas fa-file-pdf" style="font-size:24px; color:#ef4444;"></i>`}
+            <button class="ai-attachment-remove" onclick="aiAttachments.splice(${idx},1); renderAttList();"><i class="fas fa-times"></i></button>
+          </div>
+        `).join('');
+    }
+
+    // ==========================================
+    // 🌟 管理员模式：连击标题解锁编辑功能
+    // ==========================================
+    let titleClickCount = 0;
+    let titleClickTimer = null;
+
+    document.querySelector('.header h1').addEventListener('click', function() {
+        titleClickCount++;
+        clearTimeout(titleClickTimer);
+
+        if (titleClickCount >= 5) {
+            titleClickCount = 0;
+            const adminTools = document.getElementById('adminToolsGroup');
+
+            if (adminTools.style.display === 'flex') {
+                adminTools.style.display = 'none';
+                return;
+            }
+
+            const password = prompt("请输入管理员密码解锁编辑模式：");
+            if (password === "admin") {
+                adminTools.style.display = 'flex';
+            } else if (password !== null) {
+                alert("密码错误，拒绝访问。");
+            }
+        }
+
+        titleClickTimer = setTimeout(() => {
+            titleClickCount = 0;
+        }, 1200);
+    });
+
+    document.querySelector('.header h1').style.cursor = 'default';
+    document.querySelector('.header h1').style.userSelect = 'none';
+  </script>
+</body>
+</html>

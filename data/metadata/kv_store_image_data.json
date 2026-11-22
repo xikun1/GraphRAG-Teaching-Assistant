@@ -1,0 +1,16 @@
+{
+  "demo-image-1": {
+    "image_path": "data/images/lidar-ranging.png",
+    "image_name": "激光雷达测距示意",
+    "caption": "激光脉冲照射目标表面后返回传感器。往返飞行时间乘以光速再除以二，可估算目标距离。",
+    "description": "激光脉冲照射目标表面后返回传感器。往返飞行时间乘以光速再除以二，可估算目标距离。",
+    "chunk_id": "chunk-sensors"
+  },
+  "demo-image-2": {
+    "image_path": "data/images/sensor-fusion.png",
+    "image_name": "传感器融合流程图",
+    "caption": "摄像头、激光雷达和毫米波雷达的数据先对齐时间和坐标，再结合各观测的可靠性估计目标状态。",
+    "description": "摄像头、激光雷达和毫米波雷达的数据先对齐时间和坐标，再结合各观测的可靠性估计目标状态。",
+    "chunk_id": "chunk-sensors"
+  }
+}
