@@ -10,11 +10,11 @@ The platform visualizes the output of a multimodal graph-construction pipeline t
 
 This repository provides the exported graph and its interactive visualization. The graph-construction pipeline and its model configuration have not been open-sourced in this repository.
 
-Pan the graph, then select **Fit Canvas** to bring the full network back into view. Search for LiDAR to focus on its immediate neighbors, then open a linked figure from the course slides.
+Open the graph and select **Fit Canvas** to bring the entire network into view. Search for LiDAR to focus on its immediate neighbors, then open a linked figure from the course slides.
 
 <picture>
-  <source type="image/avif" srcset="assets/demos/knowledge-graph-fit-and-search.avif">
-  <img src="assets/demos/knowledge-graph-fit-and-search.gif" alt="Recentering the full graph with Fit Canvas, searching for LiDAR, and opening a linked course figure" width="960">
+  <source type="image/avif" srcset="assets/demos/knowledge-graph-load-and-search.avif">
+  <img src="assets/demos/knowledge-graph-load-and-search.gif" alt="Opening the course graph, fitting the full network to the canvas, searching for LiDAR, and viewing a linked course figure" width="960">
 </picture>
 
 ### Graph-Grounded Q&A / 图谱问答
