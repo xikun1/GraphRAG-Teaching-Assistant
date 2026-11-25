@@ -2,6 +2,8 @@
 
 An intelligent teaching assistant powered by **knowledge graphs and generative AI**. The full course graph connects concepts in artificial intelligence and autonomous driving. Learners can explore relationships, inspect course figures, and ask questions grounded in the graph.
 
+> While the manuscript and related work are in preparation, this repository shares selected code and highlights the project's progress. We will consider releasing the full codebase as open source after the paper is published.
+
 ## Interactive Demos / 交互演示（部分展示）
 
 ### Knowledge Graph Exploration / 知识图谱探索
